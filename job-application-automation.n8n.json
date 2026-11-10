@@ -1,0 +1,2605 @@
+{
+  "name": "Job Application Automation (n8n)",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { flow: 'wf1' } }];"
+      },
+      "id": "3300f8d1-e7b8-4d3d-88d4-babc2e625e57",
+      "name": "WF1 · start",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1584,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { flow: 'wf2' } }];"
+      },
+      "id": "d409a9dc-3d6e-4125-9667-496b0c323a10",
+      "name": "WF2 · start",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1584,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { flow: 'wf3' } }];"
+      },
+      "id": "817570d7-a863-4591-99ff-dea13885e13f",
+      "name": "WF3 · start",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1584,
+        1200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { flow: 'wf4' } }];"
+      },
+      "id": "b6bb5d59-d8a9-4d4b-a459-7eabd8540a06",
+      "name": "WF4 · start",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1584,
+        1792
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { flow: 'wf5' } }];"
+      },
+      "id": "e741c667-d484-4dd4-b029-9929bba64530",
+      "name": "WF5 · start",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1584,
+        2368
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "ea9823f5-587a-4ef4-bac3-3b83207d23d8",
+      "name": "🚨 Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1808,
+        2800
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { flow: 'err', errorData: $json } }];"
+      },
+      "id": "95af0d93-250d-4466-9a67-2dae953ee0e7",
+      "name": "ERR · start",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1584,
+        2800
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ═══════════════════════════════════════════════════════════════════════════\n//  ⚙️  ALL SETTINGS FOR THE 5 WORKFLOWS — change them only here.\n//  (API keys are NOT here: they live in n8n → Credentials.)\n// ═══════════════════════════════════════════════════════════════════════════\nconst CONFIG = {\n  // Google Sheet \"Job Automation\": the long ID in its URL\n  // https://docs.google.com/spreadsheets/d/<THIS PART>/edit\n  SHEET_ID: 'YOUR_GOOGLE_SHEET_ID',\n\n  // Gurwinder\n  CANDIDATE_NAME: 'Your Name',                 // full name, used in letters and as sender name\n  CANDIDATE_EMAIL: 'you@example.com',\n  CANDIDATE_PHONE: '',                         // optional, shown under the letters\n\n  // CV (PDF) in Google Drive: the ID in its share link\n  // https://drive.google.com/file/d/<THIS PART>/view\n  CV_DRIVE_FILE_ID: '',                        // leer = CV wird über CV_SEARCH_NAME in Manishas Drive gesucht\n  CV_SEARCH_NAME: 'GurwinderCV.pdf',           // exakter Dateiname des CVs in Google Drive\n  CV_FILE_NAME: 'Lebenslauf_Gurwinder.pdf',\n\n  // Telegram notifications: chat ID of Gurwinder's chat with the bot ('' = no Telegram)\n  TELEGRAM_CHAT_ID: '',   // '' = Telegram OFF, we use email instead\n\n  // SAFETY: true = every application / follow-up email goes to CANDIDATE_EMAIL (subject shows\n  // the real company address). Switch to false only after the end-to-end test.\n  TEST_MODE: true,\n\n  // ── WF1 Job Collector ──\n  SEARCH_TERMS: ['Softwareentwickler', 'Web Entwickler', 'Backend Entwickler', 'PHP Entwickler', 'Laravel Entwickler', 'Fullstack Entwickler'],\n  SEARCH_WHERE: '',              // e.g. 'Berlin' — '' = all of Germany\n  ARBEITSZEIT: 'vz',             // vz = full time, tz = part time, ho = home office, 'vz;ho' = both\n  RESULTS_PER_TERM: 50,\n  PUBLISHED_WITHIN_DAYS: 7,      // only jobs published in the last N days\n  MAX_NEW_JOBS_PER_RUN: 100,\n  TITLE_KEYWORDS: ['developer', 'entwickler', 'programmierer', 'engineer', 'java', 'c#', '.net', 'php', 'laravel', 'backend', 'back-end', 'web', 'automation', 'automatisierung', 'software', 'fullstack', 'full-stack', 'full stack'],\n  // More job sources: RSS feeds of job boards that offer RSS (never scrape sites that forbid bots)\n  // e.g. { name: 'Example board', url: 'https://example.com/jobs.rss' }\n  RSS_FEEDS: [],\n\n  // ── WF2 AI Drafter ──\n  OPENAI_MODEL: 'gpt-4o-mini',\n  MAX_DRAFTS_PER_RUN: 15,\n\n  // ── WF3 Sender ──\n  MAX_SENDS_PER_RUN: 5,\n\n  // ── WF4 Follow-up ──\n  FOLLOWUP_1_AFTER_DAYS: 7,      // after DateApplied\n  FOLLOWUP_2_AFTER_DAYS: 7,      // after FollowUp1Date (= 14 days after applying)\n  MANUAL_REMINDER_AFTER_DAYS: 3, // Manual Apply: remind Gurwinder after N days, then again 7 days later\n  MAX_FOLLOWUPS_PER_RUN: 10,\n\n  // ── WF5 Weekly report ──\n  WEEKLY_REPORT_EMAIL: true,     // also email the report to CANDIDATE_EMAIL\n\n  // ── Future: Blue Card salary flag (EUR per year) ──\n  BLUE_CARD_MIN_SALARY: 45934,\n\n  // ── NZ + Australia via Adzuna API (free dev account: https://developer.adzuna.com) ──\n  //    The German Arbeitsagentur API covers Germany only. Adzuna covers NZ + Australia (and more).\n  //    (A WF1 'Adzuna job search' HTTP node must be added — see setup guide. Fill these keys first.)\n  ADZUNA_APP_ID: '',                 // from your free Adzuna developer account\n  ADZUNA_APP_KEY: '',                // from your free Adzuna developer account\n  ADZUNA_COUNTRIES: ['nl', 'au', 'nz'],    // nz = New Zealand, au = Australia\n  ADZUNA_SEARCH_TERMS: ['PHP developer', 'Laravel developer', 'Backend developer', 'Web developer', 'Full stack developer', 'Automation developer'],\n  ADZUNA_RESULTS_PER_TERM: 50,\n  ADZUNA_BASE: 'https://api.adzuna.com/v1/api/jobs',\n\n  // Official API addresses (normally unchanged)\n  BA_API_BASE: 'https://rest.arbeitsagentur.de/jobboerse/jobsuche-service',\n  OPENAI_URL: 'https://api.openai.com/v1/chat/completions',\n};\n\nconst missing = [];\nif (!CONFIG.SHEET_ID || CONFIG.SHEET_ID.startsWith('PASTE_')) missing.push('SHEET_ID');\nif (missing.length) throw new Error('CONFIG: please fill in ' + missing.join(', ') + ' in the CONFIG node.');\nreturn $input.all().map((item) => ({ json: { ...item.json, config: CONFIG } }));\n"
+      },
+      "id": "593ef80c-e631-4435-85b1-b57c111f256c",
+      "name": "CONFIG",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1264,
+        1312
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 6,
+        "output": "={{ ['wf1', 'wf2', 'wf3', 'wf4', 'wf5', 'err'].indexOf($json.flow) }}"
+      },
+      "id": "29a608a0-18d6-463b-8451-8aca7b2d773b",
+      "name": "Route to flow",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -1008,
+        1312
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('CONFIG').first().json.config.SHEET_ID }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Jobs"
+        },
+        "options": {}
+      },
+      "id": "7a412553-6844-461d-abe8-d0b95f3b8b32",
+      "name": "WF1 · Read existing jobs",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -496,
+        32
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "manisha testing account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── shared helpers (same in every Code node) ──────────────────────────────\nconst C = $('CONFIG').first().json.config;\nconst TZ = 'Europe/Berlin';\nfunction todayISO() {\n  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());\n}\nfunction nowStamp() {\n  const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date()).map((x) => [x.type, x.value]));\n  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`;\n}\n/** Accepts 2026-10-13, 13.10.2026, 10/13/2026 or a Google Sheets serial number. Returns a UTC midnight Date or null. */\nfunction parseDate(v) {\n  if (v === null || v === undefined || v === '') return null;\n  if (typeof v === 'number' && isFinite(v)) return new Date(Date.UTC(1899, 11, 30) + Math.round(v) * 86400000);\n  const s = String(v).trim();\n  let m = s.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})/);\n  if (m) return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));\n  m = s.match(/^(\\d{1,2})\\.(\\d{1,2})\\.(\\d{4})/);\n  if (m) return new Date(Date.UTC(+m[3], +m[2] - 1, +m[1]));\n  m = s.match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})/);\n  if (m) return new Date(Date.UTC(+m[3], +m[1] - 1, +m[2]));\n  return null;\n}\nfunction daysSince(v) {\n  const d = parseDate(v);\n  return d ? Math.round((parseDate(todayISO()) - d) / 86400000) : null;\n}\nfunction deDate(v) {\n  const d = parseDate(v);\n  return d ? `${String(d.getUTCDate()).padStart(2, '0')}.${String(d.getUTCMonth() + 1).padStart(2, '0')}.${d.getUTCFullYear()}` : String(v || '');\n}\nfunction validEmail(s) {\n  return /^[^\\s@<>()\",;]+@[^\\s@<>()\",;]+\\.[a-z]{2,}$/i.test(String(s || '').trim());\n}\n/** Telegram messages use HTML: these three characters must be escaped. */\nfunction esc(s) {\n  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n}\nfunction cut(s, n) {\n  s = String(s ?? '');\n  return s.length > n ? s.slice(0, n - 1) + '…' : s;\n}\nfunction addNote(old, text) {\n  const o = String(old || '').trim();\n  return cut(o ? `${o} | ${text}` : text, 1000);\n}\nfunction sheetLink() {\n  return `https://docs.google.com/spreadsheets/d/${C.SHEET_ID}`;\n}\n/** \"Title @ Company\" without a dangling \"@\" when the company is unknown */\nfunction who(j) {\n  return [j.JobTitle, j.Company].filter(Boolean).join(' @ ') || j.JobID;\n}\n/** Telegram: linked title + \" — Company\" (only when known) */\nfunction jobHtml(j) {\n  const t = j.JobURL ? `<a href=\"${esc(j.JobURL)}\">${esc(cut(j.JobTitle || j.JobID, 80))}</a>` : esc(cut(j.JobTitle || j.JobID, 80));\n  return j.Company ? `${t} — ${esc(cut(j.Company, 60))}` : t;\n}\nfunction logFields(workflow, action, result) {\n  return { Timestamp: nowStamp(), Workflow: workflow, Action: action, Result: cut(result, 500) };\n}\n// ──────────────────────────────────────────────────────────────────────────\n\n// One item per RSS feed from CONFIG.RSS_FEEDS; a single marker item when there are none.\nconst feeds = (C.RSS_FEEDS || []).filter((f) => f && f.url);\nif (!feeds.length) return [{ json: { _noFeeds: true } }];\nreturn feeds.map((f) => ({ json: { name: f.name || f.url, url: f.url } }));\n"
+      },
+      "id": "b1139577-eec9-461b-9272-faff8e03699b",
+      "name": "WF1 · RSS feed list",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -272,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{ $json._noFeeds ? 1 : 0 }}"
+      },
+      "id": "b6f863bd-a32f-4961-bbe2-28b6f753d831",
+      "name": "WF1 · RSS feeds?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -48,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {}
+      },
+      "id": "d139da21-55af-4726-a3cb-c31f8a44661e",
+      "name": "WF1 · Read RSS feed",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        176,
+        -96
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {},
+      "id": "d1b30c3e-b639-4317-b1d8-d1a80a5f0862",
+      "name": "WF1 · Merge RSS",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        400,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── shared helpers (same in every Code node) ──────────────────────────────\nconst C = $('CONFIG').first().json.config;\nconst TZ = 'Europe/Berlin';\nfunction todayISO() {\n  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());\n}\nfunction nowStamp() {\n  const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date()).map((x) => [x.type, x.value]));\n  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`;\n}\n/** Accepts 2026-10-13, 13.10.2026, 10/13/2026 or a Google Sheets serial number. Returns a UTC midnight Date or null. */\nfunction parseDate(v) {\n  if (v === null || v === undefined || v === '') return null;\n  if (typeof v === 'number' && isFinite(v)) return new Date(Date.UTC(1899, 11, 30) + Math.round(v) * 86400000);\n  const s = String(v).trim();\n  let m = s.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})/);\n  if (m) return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));\n  m = s.match(/^(\\d{1,2})\\.(\\d{1,2})\\.(\\d{4})/);\n  if (m) return new Date(Date.UTC(+m[3], +m[2] - 1, +m[1]));\n  m = s.match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})/);\n  if (m) return new Date(Date.UTC(+m[3], +m[1] - 1, +m[2]));\n  return null;\n}\nfunction daysSince(v) {\n  const d = parseDate(v);\n  return d ? Math.round((parseDate(todayISO()) - d) / 86400000) : null;\n}\nfunction deDate(v) {\n  const d = parseDate(v);\n  return d ? `${String(d.getUTCDate()).padStart(2, '0')}.${String(d.getUTCMonth() + 1).padStart(2, '0')}.${d.getUTCFullYear()}` : String(v || '');\n}\nfunction validEmail(s) {\n  return /^[^\\s@<>()\",;]+@[^\\s@<>()\",;]+\\.[a-z]{2,}$/i.test(String(s || '').trim());\n}\n/** Telegram messages use HTML: these three characters must be escaped. */\nfunction esc(s) {\n  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n}\nfunction cut(s, n) {\n  s = String(s ?? '');\n  return s.length > n ? s.slice(0, n - 1) + '…' : s;\n}\nfunction addNote(old, text) {\n  const o = String(old || '').trim();\n  return cut(o ? `${o} | ${text}` : text, 1000);\n}\nfunction sheetLink() {\n  return `https://docs.google.com/spreadsheets/d/${C.SHEET_ID}`;\n}\n/** \"Title @ Company\" without a dangling \"@\" when the company is unknown */\nfunction who(j) {\n  return [j.JobTitle, j.Company].filter(Boolean).join(' @ ') || j.JobID;\n}\n/** Telegram: linked title + \" — Company\" (only when known) */\nfunction jobHtml(j) {\n  const t = j.JobURL ? `<a href=\"${esc(j.JobURL)}\">${esc(cut(j.JobTitle || j.JobID, 80))}</a>` : esc(cut(j.JobTitle || j.JobID, 80));\n  return j.Company ? `${t} — ${esc(cut(j.Company, 60))}` : t;\n}\nfunction logFields(workflow, action, result) {\n  return { Timestamp: nowStamp(), Workflow: workflow, Action: action, Result: cut(result, 500) };\n}\n// ──────────────────────────────────────────────────────────────────────────\n\n// One Arbeitsagentur search request per search term (official Jobsuche API).\nconst base = String(C.BA_API_BASE).replace(/\\/+$/, '');\nreturn (C.SEARCH_TERMS || []).map((term) => {\n  // (URLSearchParams does not exist in the n8n Code sandbox → build the query by hand)\n  // v6 (v4 was retired in Sept 2026 → HTTP 403). Only parameters known to work in v6 are sent;\n  // job type (Ausbildung, Praktikum …) and the age of the posting are filtered in the next node.\n  const q = { was: term, page: '1', size: String(C.RESULTS_PER_TERM || 50) };\n  if (C.SEARCH_WHERE) q.wo = C.SEARCH_WHERE;\n  const qs = Object.entries(q).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');\n  return { json: { term, url: `${base}/pc/v6/jobs?${qs}` } };\n});\n"
+      },
+      "id": "0e8c2b90-7288-4428-9a4f-2cf3b7114d05",
+      "name": "WF1 · Arbeitsagentur search terms",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        32
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "jobboerse-jobsuche"
+            }
+          ]
+        },
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "06092bb5-eca9-4864-82f4-53a264ace00f",
+      "name": "WF1 · Arbeitsagentur job search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        848,
+        32
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── shared helpers (same in every Code node) ──────────────────────────────\nconst C = $('CONFIG').first().json.config;\nconst TZ = 'Europe/Berlin';\nfunction todayISO() {\n  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());\n}\nfunction nowStamp() {\n  const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date()).map((x) => [x.type, x.value]));\n  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`;\n}\n/** Accepts 2026-10-13, 13.10.2026, 10/13/2026 or a Google Sheets serial number. Returns a UTC midnight Date or null. */\nfunction parseDate(v) {\n  if (v === null || v === undefined || v === '') return null;\n  if (typeof v === 'number' && isFinite(v)) return new Date(Date.UTC(1899, 11, 30) + Math.round(v) * 86400000);\n  const s = String(v).trim();\n  let m = s.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})/);\n  if (m) return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));\n  m = s.match(/^(\\d{1,2})\\.(\\d{1,2})\\.(\\d{4})/);\n  if (m) return new Date(Date.UTC(+m[3], +m[2] - 1, +m[1]));\n  m = s.match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})/);\n  if (m) return new Date(Date.UTC(+m[3], +m[1] - 1, +m[2]));\n  return null;\n}\nfunction daysSince(v) {\n  const d = parseDate(v);\n  return d ? Math.round((parseDate(todayISO()) - d) / 86400000) : null;\n}\nfunction deDate(v) {\n  const d = parseDate(v);\n  return d ? `${String(d.getUTCDate()).padStart(2, '0')}.${String(d.getUTCMonth() + 1).padStart(2, '0')}.${d.getUTCFullYear()}` : String(v || '');\n}\nfunction validEmail(s) {\n  return /^[^\\s@<>()\",;]+@[^\\s@<>()\",;]+\\.[a-z]{2,}$/i.test(String(s || '').trim());\n}\n/** Telegram messages use HTML: these three characters must be escaped. */\nfunction esc(s) {\n  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n}\nfunction cut(s, n) {\n  s = String(s ?? '');\n  return s.length > n ? s.slice(0, n - 1) + '…' : s;\n}\nfunction addNote(old, text) {\n  const o = String(old || '').trim();\n  return cut(o ? `${o} | ${text}` : text, 1000);\n}\nfunction sheetLink() {\n  return `https://docs.google.com/spreadsheets/d/${C.SHEET_ID}`;\n}\n/** \"Title @ Company\" without a dangling \"@\" when the company is unknown */\nfunction who(j) {\n  return [j.JobTitle, j.Company].filter(Boolean).join(' @ ') || j.JobID;\n}\n/** Telegram: linked title + \" — Company\" (only when known) */\nfunction jobHtml(j) {\n  const t = j.JobURL ? `<a href=\"${esc(j.JobURL)}\">${esc(cut(j.JobTitle || j.JobID, 80))}</a>` : esc(cut(j.JobTitle || j.JobID, 80));\n  return j.Company ? `${t} — ${esc(cut(j.Company, 60))}` : t;\n}\nfunction logFields(workflow, action, result) {\n  return { Timestamp: nowStamp(), Workflow: workflow, Action: action, Result: cut(result, 500) };\n}\n// ──────────────────────────────────────────────────────────────────────────\n\n// Normalise Arbeitsagentur + RSS jobs to one shape, keep only IT/developer roles,\n// drop jobs already in the sheet (by JobID or JobURL) and duplicates within this run.\nconst base = String(C.BA_API_BASE).replace(/\\/+$/, '');\nconst keywords = (C.TITLE_KEYWORDS || []).map((k) => String(k).toLowerCase());\nconst isIT = (title) => {\n  const t = String(title || '').toLowerCase();\n  return keywords.some((k) => t.includes(k));\n};\nconst known = new Set();\nfor (const r of $('WF1 · Read existing jobs').all()) {\n  if (r.json.JobID) known.add(String(r.json.JobID).trim());\n  if (r.json.JobURL) known.add(String(r.json.JobURL).trim());\n}\nconst stripHtml = (s) => String(s || '').replace(/<br\\s*\\/?>/gi, '\\n').replace(/<\\/(p|li|div|h\\d)>/gi, '\\n').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '\"').replace(/[ \\t]+/g, ' ').replace(/\\n\\s*\\n+/g, '\\n').trim();\n// base64 of the reference number for the details URL (btoa/Buffer are not reliable in the Code sandbox)\nconst b64 = (s) => {\n  const A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';\n  const bytes = String(s); // reference numbers are plain ASCII (e.g. 10001-1002716922-S)\n  let out = '';\n  for (let i = 0; i < bytes.length; i += 3) {\n    const n = (bytes.charCodeAt(i) << 16) | ((bytes.charCodeAt(i + 1) || 0) << 8) | (bytes.charCodeAt(i + 2) || 0);\n    out += A[(n >> 18) & 63] + A[(n >> 12) & 63] + (i + 1 < bytes.length ? A[(n >> 6) & 63] : '=') + (i + 2 < bytes.length ? A[n & 63] : '=');\n  }\n  return out;\n};\nconst hash = (s) => {\n  let h = 5381;\n  for (const ch of String(s)) h = ((h << 5) + h + ch.charCodeAt(0)) >>> 0;\n  return h.toString(36);\n};\n\nconst out = [];\nconst seen = new Set();\nlet total = 0, notIT = 0, already = 0, apiErrors = 0;\nconst take = (job) => {\n  total++;\n  if (!isIT(job.JobTitle)) { notIT++; return; }\n  // v10: Germany-only (drop Austria) + drop non-software 'Automatisierung' roles\n  const _loc = String(job.Location || '');\n  if (/\\bwien\\b|\\bgraz\\b|\\bbezirk\\b|\\bbundesland\\b|\\bsalzburg\\b|\\blinz\\b|\\binnsbruck\\b|\\bklagenfurt\\b/i.test(_loc) || /ams\\.at/i.test(String(job._externalUrl || '')) || /^\\d{4}(\\s|,)/.test(_loc.trim())) { notIT++; return; }\n  if (/elektroniker|elektrotechnik|mechatronik|servicetechnik|inbetriebnah|schaltanlage|betriebstechnik|\\bsps\\b|robotik|maschinenbau|konstrukteur/i.test(String(job.JobTitle || ''))) { notIT++; return; }\n  const keys = [job.JobID, job.JobURL].filter(Boolean);\n  if (keys.some((k) => known.has(k) || seen.has(k))) { already++; return; }\n  keys.forEach((k) => seen.add(k));\n  out.push({ json: job });\n};\n\n// 1) Bundesagentur für Arbeit — API v6 (ergebnisliste); the old v4 field names stay as fallback\nconst NOT_A_JOB = /\\b(ausbildung|azubi|praktik|praktikum|werkstudent|duales studium|abschlussarbeit|minijob)/i;\nconst maxAgeDays = Number(C.PUBLISHED_WITHIN_DAYS) || 0;\nconst oldest = maxAgeDays ? Date.now() - maxAgeDays * 86400000 : 0;\nconst title1 = (s) => (s && s === s.toUpperCase() ? s.toLowerCase().replace(/(^|[\\s-])\\S/g, (m) => m.toUpperCase()) : s || '');\nlet tooOld = 0;\nconst responses = $input.all();\nfor (const it of responses) {\n  const r = it.json || {};\n  if (r.error) { apiErrors++; continue; }\n  for (const j of r.ergebnisliste || r.stellenangebote || []) {\n    const refnr = j.referenznummer || j.refnr || j.hashId;\n    if (!refnr) continue;\n    const title = j.stellenangebotsTitel || j.titel || j.hauptberuf || j.beruf || '';\n    if (NOT_A_JOB.test(title)) { total++; notIT++; continue; }\n    const lok = Array.isArray(j.stellenlokationen) && j.stellenlokationen[0] ? (j.stellenlokationen[0].adresse || j.stellenlokationen[0]) : null;\n    const ort = lok || j.arbeitsort || (Array.isArray(j.arbeitsorte) ? j.arbeitsorte[0] : null) || {};\n    const von = (j.veroeffentlichungszeitraum && j.veroeffentlichungszeitraum.von) || j.aktuelleVeroeffentlichungsdatum || j.ersteVeroeffentlichungsdatum || '';\n    if (oldest && von && !isNaN(Date.parse(von)) && Date.parse(von) < oldest) { total++; tooOld++; continue; }\n    take({\n      JobID: 'BA-' + refnr,\n      Source: 'Bundesagentur',\n      Company: j.firma || j.arbeitgeber || '',\n      JobTitle: title,\n      Location: [ort.plz, ort.ort].filter(Boolean).join(' ') || title1(ort.region) || '',\n      JobURL: `https://www.arbeitsagentur.de/jobsuche/jobdetail/${refnr}`,\n      DatePosted: String(von).slice(0, 10),\n      _src: 'BA',\n      _externalUrl: j.externeUrl || j.externeURL || '',\n      _description: stripHtml(j.stellenangebotsBeschreibung || j.stellenbeschreibung || j.beschreibung || ''),\n      // The v4 detail endpoint is retired. Leave empty (= no detail request) unless a working\n      // path is put into CONFIG as BA_DETAILS_PATH, e.g. '/pc/v6/jobdetails'.\n      _detailUrl: C.BA_DETAILS_PATH ? `${base}${String(C.BA_DETAILS_PATH).replace(/\\/+$/, '')}/${b64(refnr)}` : '',\n    });\n  }\n}\nif (responses.length && apiErrors === responses.length) {\n  throw new Error(`Arbeitsagentur API failed for all ${apiErrors} search terms: ${JSON.stringify(responses[0].json.error).slice(0, 300)}`);\n}\n\n// 2) RSS feeds (if any are configured)\nlet rss = [];\ntry { rss = $('WF1 · Read RSS feed').all(); } catch (e) { rss = []; }\nfor (const it of rss) {\n  const r = it.json || {};\n  if (!r.link || r.error) continue;\n  const host = (String(r.link).match(/^[a-z]+:\\/\\/(?:www\\.)?([^/:?#]+)/i) || [])[1] || 'rss';\n  take({\n    JobID: 'RSS-' + hash(r.guid || r.link),\n    Source: 'RSS: ' + host,\n    Company: r.creator || r.author || '',\n    JobTitle: r.title || '',\n    Location: '',\n    JobURL: r.link,\n    DatePosted: String(r.isoDate || '').slice(0, 10),\n    _src: 'RSS',\n    _description: stripHtml(r.content || r.contentSnippet || ''),\n  });\n}\n\nconst max = Number(C.MAX_NEW_JOBS_PER_RUN) || 100;\n// nothing new: one marker item, so the run is still written to the Log tab (no Telegram)\nif (!out.length) return [{ json: { _none: true, _stats: { total, notIT, already, apiErrors, tooOld, new: 0, skippedOverMax: 0 } } }];\n// stats for the digest (read by the digest node)\nreturn out.slice(0, max).map((x, i) => ({ json: { ...x.json, _stats: i === 0 ? { total, notIT, already, apiErrors, tooOld, new: Math.min(out.length, max), skippedOverMax: Math.max(0, out.length - max) } : undefined } }));\n"
+      },
+      "id": "e8417c5e-539e-44e3-ab49-85fbaa61c160",
+      "name": "WF1 · Normalise, filter, dedupe",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1056,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 3,
+        "output": "={{ $json._none ? 2 : ($json._src === 'BA' && $json._detailUrl) ? 0 : 1 }}"
+      },
+      "id": "e84dda92-e786-4e4e-8f51-ecd1cff52dda",
+      "name": "WF1 · Needs job details?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1280,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json._detailUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "jobboerse-jobsuche"
+            }
+          ]
+        },
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 2
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "4b4e2834-6a24-4acc-83e8-b45ddc4d46f6",
+      "name": "WF1 · Arbeitsagentur job details",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1504,
+        -96
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {},
+      "id": "07b883fc-0144-42a7-bd81-36c1c30026bb",
+      "name": "WF1 · Merge details",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1728,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// ── shared helpers (same in every Code node) ──────────────────────────────\nconst C = $('CONFIG').first().json.config;\nconst TZ = 'Europe/Berlin';\nfunction todayISO() {\n  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());\n}\nfunction nowStamp() {\n  const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date()).map((x) => [x.type, x.value]));\n  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`;\n}\n/** Accepts 2026-10-13, 13.10.2026, 10/13/2026 or a Google Sheets serial number. Returns a UTC midnight Date or null. */\nfunction parseDate(v) {\n  if (v === null || v === undefined || v === '') return null;\n  if (typeof v === 'number' && isFinite(v)) return new Date(Date.UTC(1899, 11, 30) + Math.round(v) * 86400000);\n  const s = String(v).trim();\n  let m = s.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})/);\n  if (m) return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));\n  m = s.match(/^(\\d{1,2})\\.(\\d{1,2})\\.(\\d{4})/);\n  if (m) return new Date(Date.UTC(+m[3], +m[2] - 1, +m[1]));\n  m = s.match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})/);\n  if (m) return new Date(Date.UTC(+m[3], +m[1] - 1, +m[2]));\n  return null;\n}\nfunction daysSince(v) {\n  const d = parseDate(v);\n  return d ? Math.round((parseDate(todayISO()) - d) / 86400000) : null;\n}\nfunction deDate(v) {\n  const d = parseDate(v);\n  return d ? `${String(d.getUTCDate()).padStart(2, '0')}.${String(d.getUTCMonth() + 1).padStart(2, '0')}.${d.getUTCFullYear()}` : String(v || '');\n}\nfunction validEmail(s) {\n  return /^[^\\s@<>()\",;]+@[^\\s@<>()\",;]+\\.[a-z]{2,}$/i.test(String(s || '').trim());\n}\n/** Telegram messages use HTML: these three characters must be escaped. */\nfunction esc(s) {\n  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n}\nfunction cut(s, n) {\n  s = String(s ?? '');\n  return s.length > n ? s.slice(0, n - 1) + '…' : s;\n}\nfunction addNote(old, text) {\n  const o = String(old || '').trim();\n  return cut(o ? `${o} | ${text}` : text, 1000);\n}\nfunction sheetLink() {\n  return `https://docs.google.com/spreadsheets/d/${C.SHEET_ID}`;\n}\n/** \"Title @ Company\" without a dangling \"@\" when the company is unknown */\nfunction who(j) {\n  return [j.JobTitle, j.Company].filter(Boolean).join(' @ ') || j.JobID;\n}\n/** Telegram: linked title + \" — Company\" (only when known) */\nfunction jobHtml(j) {\n  const t = j.JobURL ? `<a href=\"${esc(j.JobURL)}\">${esc(cut(j.JobTitle || j.JobID, 80))}</a>` : esc(cut(j.JobTitle || j.JobID, 80));\n  return j.Company ? `${t} — ${esc(cut(j.Company, 60))}` : t;\n}\nfunction logFields(workflow, action, result) {\n  return { Timestamp: nowStamp(), Workflow: workflow, Action: action, Result: cut(result, 500) };\n}\n// ──────────────────────────────────────────────────────────────────────────\n\n// One sheet row per new job: description from the job details, the company e-mail published in\n// the job post (GDPR: only addresses from the post itself), VisaFlag and Language.\nconst job = $('WF1 · Normalise, filter, dedupe').item.json;\nconst d = job._src === 'BA' && !$json.JobID ? $json : {};\nconst stripHtml = (s) => String(s || '').replace(/<br\\s*\\/?>/gi, '\\n').replace(/<\\/(p|li|div|h\\d)>/gi, '\\n').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '\"').replace(/[ \\t]+/g, ' ').replace(/\\n\\s*\\n+/g, '\\n').trim();\nconst description = stripHtml(d.stellenangebotsBeschreibung || d.stellenbeschreibung || job._description || '');\nconst text = `${job.JobTitle}\\n${description}`;\n\n// e-mail address published in the job post (prefer HR / application addresses)\nconst emails = [...new Set((description.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/gi) || []).map((e) => e.replace(/[.,;:]+$/, '').toLowerCase()))]\n  .filter((e) => validEmail(e) && !/^(no-?reply|donotreply|datenschutz|privacy|dsb|info@arbeitsagentur)/i.test(e));\nconst companyEmail = emails.find((e) => /bewerb|job|karriere|career|recruit|hr|personal|talent/i.test(e)) || emails[0] || '';\n\n// language of the posting\nconst words = (re) => (text.toLowerCase().match(re) || []).length;\nconst en = words(/\\b(the|and|you|with|our|we|will|experience|team|skills|your|for)\\b/g);\nconst de = words(/\\b(und|der|die|das|mit|für|wir|sie|ihre|erfahrung|kenntnisse|bei|einer)\\b/g);\nconst language = en > de * 1.2 ? 'EN' : 'DE';\n\n// visa / relocation friendliness\nlet visa = 'No';\nif (/\\b(visa|visum|sponsor(ship|ing)?|blue card|blaue karte|work permit|relocation (support|package|assistance|bonus)|umzugs(hilfe|unterstützung|kosten|pauschale)|relocation)\\b/i.test(text)) visa = 'Yes';\nelse if (language === 'EN' || /\\b(english|englisch|international(e|es|en)? team|internationally)\\b/i.test(text)) visa = 'Maybe';\n\nconst notes = job._externalUrl ? `Original-Anzeige: ${job._externalUrl}` : '';\nreturn {\n  json: {\n    JobID: job.JobID,\n    Source: job.Source,\n    Company: job.Company || d.arbeitgeber || '',\n    JobTitle: job.JobTitle || d.stellenangebotsTitel || d.titel || '',\n    Location: job.Location,\n    JobURL: job.JobURL,\n    CompanyEmail: companyEmail,\n    VisaFlag: visa,\n    Language: language,\n    DatePosted: job.DatePosted,\n    DateFound: todayISO(),\n    Status: 'New',\n    DraftDE: '',\n    DraftEN: '',\n    DateApplied: '',\n    FollowUp1Date: '',\n    FollowUp2Date: '',\n    Notes: notes,\n    Description: cut(description, 6000),\n    _detailsMissing: job._src === 'BA' && !description,\n  },\n};\n"
+      },
+      "id": "1e7ab1bb-f326-40b0-b862-5e393ded250d",
+      "name": "WF1 · Description, e-mail, visa, language",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1936,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('CONFIG').first().json.config.SHEET_ID }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Jobs"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "d585cd06-1796-4df2-99ff-4a7737726205",
+      "name": "WF1 · Add new jobs to sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2160,
+        32
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "manisha testing account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── shared helpers (same in every Code node) ──────────────────────────────\nconst C = $('CONFIG').first().json.config;\nconst TZ = 'Europe/Berlin';\nfunction todayISO() {\n  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());\n}\nfunction nowStamp() {\n  const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date()).map((x) => [x.type, x.value]));\n  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`;\n}\n/** Accepts 2026-10-13, 13.10.2026, 10/13/2026 or a Google Sheets serial number. Returns a UTC midnight Date or null. */\nfunction parseDate(v) {\n  if (v === null || v === undefined || v === '') return null;\n  if (typeof v === 'number' && isFinite(v)) return new Date(Date.UTC(1899, 11, 30) + Math.round(v) * 86400000);\n  const s = String(v).trim();\n  let m = s.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})/);\n  if (m) return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));\n  m = s.match(/^(\\d{1,2})\\.(\\d{1,2})\\.(\\d{4})/);\n  if (m) return new Date(Date.UTC(+m[3], +m[2] - 1, +m[1]));\n  m = s.match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})/);\n  if (m) return new Date(Date.UTC(+m[3], +m[1] - 1, +m[2]));\n  return null;\n}\nfunction daysSince(v) {\n  const d = parseDate(v);\n  return d ? Math.round((parseDate(todayISO()) - d) / 86400000) : null;\n}\nfunction deDate(v) {\n  const d = parseDate(v);\n  return d ? `${String(d.getUTCDate()).padStart(2, '0')}.${String(d.getUTCMonth() + 1).padStart(2, '0')}.${d.getUTCFullYear()}` : String(v || '');\n}\nfunction validEmail(s) {\n  return /^[^\\s@<>()\",;]+@[^\\s@<>()\",;]+\\.[a-z]{2,}$/i.test(String(s || '').trim());\n}\n/** Telegram messages use HTML: these three characters must be escaped. */\nfunction esc(s) {\n  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n}\nfunction cut(s, n) {\n  s = String(s ?? '');\n  return s.length > n ? s.slice(0, n - 1) + '…' : s;\n}\nfunction addNote(old, text) {\n  const o = String(old || '').trim();\n  return cut(o ? `${o} | ${text}` : text, 1000);\n}\nfunction sheetLink() {\n  return `https://docs.google.com/spreadsheets/d/${C.SHEET_ID}`;\n}\n/** \"Title @ Company\" without a dangling \"@\" when the company is unknown */\nfunction who(j) {\n  return [j.JobTitle, j.Company].filter(Boolean).join(' @ ') || j.JobID;\n}\n/** Telegram: linked title + \" — Company\" (only when known) */\nfunction jobHtml(j) {\n  const t = j.JobURL ? `<a href=\"${esc(j.JobURL)}\">${esc(cut(j.JobTitle || j.JobID, 80))}</a>` : esc(cut(j.JobTitle || j.JobID, 80));\n  return j.Company ? `${t} — ${esc(cut(j.Company, 60))}` : t;\n}\nfunction logFields(workflow, action, result) {\n  return { Timestamp: nowStamp(), Workflow: workflow, Action: action, Result: cut(result, 500) };\n}\n// ──────────────────────────────────────────────────────────────────────────\n\n// One summary item: log row + Telegram digest.\nconst rows = $input.all().map((i) => i.json).filter((r) => r.JobID);\nconst stats = ($('WF1 · Normalise, filter, dedupe').first().json || {})._stats || {};\nconst yes = rows.filter((r) => r.VisaFlag === 'Yes').length;\nconst maybe = rows.filter((r) => r.VisaFlag === 'Maybe').length;\nconst withEmail = rows.filter((r) => r.CompanyEmail).length;\nconst noDetails = rows.filter((r) => r._detailsMissing).length;\nconst result = `${rows.length} new jobs (${yes} visa-friendly, ${maybe} maybe, ${withEmail} with company e-mail)` +\n  ` · checked ${stats.total ?? '?'}, not IT ${stats.notIT ?? '?'}, already known ${stats.already ?? '?'}` +\n  (stats.apiErrors ? ` · ${stats.apiErrors} search request(s) failed` : '') +\n  (noDetails ? ` · ${noDetails} without job details` : '') +\n  (stats.skippedOverMax ? ` · ${stats.skippedOverMax} more left for the next run` : '');\nconst list = rows\n  .slice()\n  .sort((a, b) => (a.VisaFlag === 'Yes' ? 0 : a.VisaFlag === 'Maybe' ? 1 : 2) - (b.VisaFlag === 'Yes' ? 0 : b.VisaFlag === 'Maybe' ? 1 : 2))\n  .slice(0, 10)\n  .map((r) => `• ${r.VisaFlag === 'Yes' ? '🛂 ' : ''}<a href=\"${esc(r.JobURL)}\">${esc(cut(r.JobTitle, 70))}</a>${[r.Company && cut(r.Company, 40), r.Location].filter(Boolean).length ? ' — ' + esc([r.Company && cut(r.Company, 40), r.Location].filter(Boolean).join(', ')) : ''}`)\n  .join('\\n');\nconst tg = `🔎 <b>${rows.length} new jobs found</b> · ${yes} visa-friendly, ${maybe} maybe\\n\\n${list}${rows.length > 10 ? `\\n… and ${rows.length - 10} more` : ''}\\n\\n` +\n  `Mark the ones you want as <b>Selected</b> in the sheet:\\n${esc(sheetLink())}`;\nreturn [{ json: { ...logFields('WF1 Job Collector', 'collect', result), _tg: rows.length ? cut(tg, 4000) : '' } }];\n"
+      },
+      "id": "e95c8a7b-f161-413a-b66b-e189c8d47808",
+      "name": "WF1 · Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2384,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('CONFIG').first().json.config.SHEET_ID }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Log"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "6534fa64-cc23-44fd-b384-ce2c225c05ff",
+      "name": "WF1 · Write log",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2608,
+        32
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "manisha testing account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{ $('CONFIG').first().json.config.TELEGRAM_CHAT_ID && $json._tg ? 0 : 1 }}"
+      },
+      "id": "d738c9c6-a413-4cf6-8b58-80b24477db72",
+      "name": "WF1 · Telegram on?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        2816,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('CONFIG').first().json.config.TELEGRAM_CHAT_ID }}",
+        "text": "={{ $json._tg }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "666294d9-fce8-4119-a915-dde0a112e74e",
+      "name": "WF1 · Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3040,
+        -16
+      ],
+      "webhookId": "cffc4c53-7357-40e2-964f-d8d8049b5223",
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Telegram account 2"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('CONFIG').first().json.config.SHEET_ID }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Jobs"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Status",
+              "lookupValue": "New"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8bcc5916-67b0-4415-b422-a140e969c9fd",
+      "name": "WF2 · Read Selected jobs",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -496,
+        672
+      ],
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "manisha testing account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "maxItems": "={{ $('CONFIG').first().json.config.MAX_DRAFTS_PER_RUN }}"
+      },
+      "id": "98c72293-b45b-4bfe-a685-ca93054c5396",
+      "name": "WF2 · Limit per run",
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        -272,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('CONFIG').first().json.config.SHEET_ID }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Profile"
+        },
+        "options": {}
+      },
+      "id": "595d0485-a0a8-4fa9-a855-d41bd2f5275f",
+      "name": "WF2 · Read Profile",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -48,
+        672
+      ],
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "manisha testing account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── shared helpers (same in every Code node) ──────────────────────────────\nconst C = $('CONFIG').first().json.config;\nconst TZ = 'Europe/Berlin';\nfunction todayISO() {\n  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());\n}\nfunction nowStamp() {\n  const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date()).map((x) => [x.type, x.value]));\n  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`;\n}\n/** Accepts 2026-10-13, 13.10.2026, 10/13/2026 or a Google Sheets serial number. Returns a UTC midnight Date or null. */\nfunction parseDate(v) {\n  if (v === null || v === undefined || v === '') return null;\n  if (typeof v === 'number' && isFinite(v)) return new Date(Date.UTC(1899, 11, 30) + Math.round(v) * 86400000);\n  const s = String(v).trim();\n  let m = s.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})/);\n  if (m) return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));\n  m = s.match(/^(\\d{1,2})\\.(\\d{1,2})\\.(\\d{4})/);\n  if (m) return new Date(Date.UTC(+m[3], +m[2] - 1, +m[1]));\n  m = s.match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})/);\n  if (m) return new Date(Date.UTC(+m[3], +m[1] - 1, +m[2]));\n  return null;\n}\nfunction daysSince(v) {\n  const d = parseDate(v);\n  return d ? Math.round((parseDate(todayISO()) - d) / 86400000) : null;\n}\nfunction deDate(v) {\n  const d = parseDate(v);\n  return d ? `${String(d.getUTCDate()).padStart(2, '0')}.${String(d.getUTCMonth() + 1).padStart(2, '0')}.${d.getUTCFullYear()}` : String(v || '');\n}\nfunction validEmail(s) {\n  return /^[^\\s@<>()\",;]+@[^\\s@<>()\",;]+\\.[a-z]{2,}$/i.test(String(s || '').trim());\n}\n/** Telegram messages use HTML: these three characters must be escaped. */\nfunction esc(s) {\n  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n}\nfunction cut(s, n) {\n  s = String(s ?? '');\n  return s.length > n ? s.slice(0, n - 1) + '…' : s;\n}\nfunction addNote(old, text) {\n  const o = String(old || '').trim();\n  return cut(o ? `${o} | ${text}` : text, 1000);\n}\nfunction sheetLink() {\n  return `https://docs.google.com/spreadsheets/d/${C.SHEET_ID}`;\n}\n/** \"Title @ Company\" without a dangling \"@\" when the company is unknown */\nfunction who(j) {\n  return [j.JobTitle, j.Company].filter(Boolean).join(' @ ') || j.JobID;\n}\n/** Telegram: linked title + \" — Company\" (only when known) */\nfunction jobHtml(j) {\n  const t = j.JobURL ? `<a href=\"${esc(j.JobURL)}\">${esc(cut(j.JobTitle || j.JobID, 80))}</a>` : esc(cut(j.JobTitle || j.JobID, 80));\n  return j.Company ? `${t} — ${esc(cut(j.Company, 60))}` : t;\n}\nfunction logFields(workflow, action, result) {\n  return { Timestamp: nowStamp(), Workflow: workflow, Action: action, Result: cut(result, 500) };\n}\n// ──────────────────────────────────────────────────────────────────────────\n\n// One OpenAI request per selected job: German + English cover letter, tailored to THIS job.\nlet profile = '';\ntry {\n  const p = $('WF2 · Read Profile').first().json || {};\n  profile = String(p.Profile || Object.values(p).filter((v) => typeof v === 'string').join('\\n') || '').trim();\n} catch (e) {}\nif (!profile) throw new Error('Tab \"Profile\" is empty: write Gurwinder\\'s profile in cell A2 (header \"Profile\" in A1).');\n\nconst SYSTEM = [\n  'You are an expert German job-application writer.',\n  'Write a concise, professional cover letter tailored to THIS job, showing how the candidate\\'s skills help THIS company.',\n  'Use only facts from the candidate profile — never invent degrees, employers, years or skills.',\n  'No family information, no age, no religion, no photo remarks.',\n  'Offer a short work sample (e.g. a small task or a code example) near the end.',\n  'Structure: salutation, 3 short paragraphs (why this company/job, matching experience with one concrete example, work sample + availability), polite closing, the candidate\\'s name.',\n  'Max. 230 words per letter. Plain text, no markdown, no subject line, no address block.',\n  'Salutation: use the contact person if the job text names one, otherwise \"Sehr geehrte Damen und Herren,\" / \"Dear Sir or Madam,\".',\n  'Return ONLY a JSON object: {\"de\": \"<German letter>\", \"en\": \"<English letter>\"}',\n].join('\\n');\n\nreturn $('WF2 · Limit per run').all().map((it) => {\n  const j = it.json;\n  const user = [\n    `JOB TITLE: ${j.JobTitle || ''}`,\n    `COMPANY: ${j.Company || ''}`,\n    `LOCATION: ${j.Location || ''}`,\n    `JOB LINK: ${j.JobURL || ''}`,\n    `JOB DESCRIPTION:\\n${cut(j.Description || '(no description available — use the title and company)', 6000)}`,\n    '',\n    `CANDIDATE PROFILE:\\n${cut(profile, 6000)}`,\n    '',\n    `Sign with: ${C.CANDIDATE_NAME}${C.CANDIDATE_EMAIL && !String(C.CANDIDATE_EMAIL).startsWith('PASTE_') ? ', ' + C.CANDIDATE_EMAIL : ''}${C.CANDIDATE_PHONE ? ', ' + C.CANDIDATE_PHONE : ''}`,\n  ].join('\\n');\n  return {\n    json: {\n      JobID: j.JobID, JobTitle: j.JobTitle, Company: j.Company, JobURL: j.JobURL, Language: j.Language, Notes: j.Notes,\n      request: {\n        model: C.OPENAI_MODEL,\n        temperature: 0.4,\n        response_format: { type: 'json_object' },\n        messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: user }],\n      },\n    },\n  };\n});\n"
+      },
+      "id": "575ba122-1a74-493b-a3c8-f65b3f4f34fe",
+      "name": "WF2 · Build prompts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        176,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('CONFIG').first().json.config.OPENAI_URL }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.request) }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 1500
+            }
+          },
+          "timeout": 120000
+        }
+      },
+      "id": "42590998-fad9-4838-9855-650a63453431",
+      "name": "WF2 · Write letters (OpenAI)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        400,
+        672
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": "OpenAi account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// ── shared helpers (same in every Code node) ──────────────────────────────\nconst C = $('CONFIG').first().json.config;\nconst TZ = 'Europe/Berlin';\nfunction todayISO() {\n  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());\n}\nfunction nowStamp() {\n  const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date()).map((x) => [x.type, x.value]));\n  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`;\n}\n/** Accepts 2026-10-13, 13.10.2026, 10/13/2026 or a Google Sheets serial number. Returns a UTC midnight Date or null. */\nfunction parseDate(v) {\n  if (v === null || v === undefined || v === '') return null;\n  if (typeof v === 'number' && isFinite(v)) return new Date(Date.UTC(1899, 11, 30) + Math.round(v) * 86400000);\n  const s = String(v).trim();\n  let m = s.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})/);\n  if (m) return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));\n  m = s.match(/^(\\d{1,2})\\.(\\d{1,2})\\.(\\d{4})/);\n  if (m) return new Date(Date.UTC(+m[3], +m[2] - 1, +m[1]));\n  m = s.match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})/);\n  if (m) return new Date(Date.UTC(+m[3], +m[1] - 1, +m[2]));\n  return null;\n}\nfunction daysSince(v) {\n  const d = parseDate(v);\n  return d ? Math.round((parseDate(todayISO()) - d) / 86400000) : null;\n}\nfunction deDate(v) {\n  const d = parseDate(v);\n  return d ? `${String(d.getUTCDate()).padStart(2, '0')}.${String(d.getUTCMonth() + 1).padStart(2, '0')}.${d.getUTCFullYear()}` : String(v || '');\n}\nfunction validEmail(s) {\n  return /^[^\\s@<>()\",;]+@[^\\s@<>()\",;]+\\.[a-z]{2,}$/i.test(String(s || '').trim());\n}\n/** Telegram messages use HTML: these three characters must be escaped. */\nfunction esc(s) {\n  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n}\nfunction cut(s, n) {\n  s = String(s ?? '');\n  return s.length > n ? s.slice(0, n - 1) + '…' : s;\n}\nfunction addNote(old, text) {\n  const o = String(old || '').trim();\n  return cut(o ? `${o} | ${text}` : text, 1000);\n}\nfunction sheetLink() {\n  return `https://docs.google.com/spreadsheets/d/${C.SHEET_ID}`;\n}\n/** \"Title @ Company\" without a dangling \"@\" when the company is unknown */\nfunction who(j) {\n  return [j.JobTitle, j.Company].filter(Boolean).join(' @ ') || j.JobID;\n}\n/** Telegram: linked title + \" — Company\" (only when known) */\nfunction jobHtml(j) {\n  const t = j.JobURL ? `<a href=\"${esc(j.JobURL)}\">${esc(cut(j.JobTitle || j.JobID, 80))}</a>` : esc(cut(j.JobTitle || j.JobID, 80));\n  return j.Company ? `${t} — ${esc(cut(j.Company, 60))}` : t;\n}\nfunction logFields(workflow, action, result) {\n  return { Timestamp: nowStamp(), Workflow: workflow, Action: action, Result: cut(result, 500) };\n}\n// ──────────────────────────────────────────────────────────────────────────\n\n// Read the AI answer → DraftDE / DraftEN, Status \"Draft Ready\" (on failure: note, status unchanged).\nconst job = $('WF2 · Build prompts').item.json;\nlet de = '', en = '', err = '';\nif ($json.error) {\n  err = typeof $json.error === 'string' ? $json.error : $json.error.message || JSON.stringify($json.error);\n} else {\n  try {\n    const o = JSON.parse($json.choices[0].message.content);\n    de = String(o.de || o.german || o.DE || '').trim();\n    en = String(o.en || o.english || o.EN || '').trim();\n  } catch (e) {\n    err = 'could not read the AI answer (' + e.message + ')';\n  }\n  if (!err && (!de || !en)) err = 'the AI answer is missing the German or English letter';\n}\nif (err) {\n  // 3rd failure in a row → back to \"New\" so it is not retried (and paid for) every 30 minutes\n  const failedBefore = (String(job.Notes || '').match(/draft failed/g) || []).length;\n  const giveUp = failedBefore >= 2;\n  return {\n    json: {\n      JobID: job.JobID,\n      ...(giveUp ? { Status: 'New' } : {}),\n      Notes: addNote(job.Notes, `${todayISO()} draft failed: ${cut(err, 160)}${giveUp ? ' (3×: set back to New — set Selected again to retry)' : ' (stays Selected, retried next run)'}`),\n      ...logFields('WF2 AI Drafter', giveUp ? 'draft failed 3×' : 'draft failed', `${job.JobID} · ${who(job)} · ${err}`),\n      _tg: `⚠️ <b>Draft failed${giveUp ? ' 3 times' : ''}</b>: ${jobHtml(job)}\\n${esc(cut(err, 300))}`,\n    },\n  };\n}\nconst preview = String(job.Language).toUpperCase() === 'EN' ? en : de;\nreturn {\n  json: {\n    JobID: job.JobID,\n    DraftDE: de,\n    DraftEN: en,\n    Status: 'Draft Ready',\n    ...logFields('WF2 AI Drafter', 'draft ready', `${job.JobID} · ${who(job)}`),\n    _tg: cut(\n      `✍️ <b>Draft ready</b> (${esc(String(job.Language || 'DE').toUpperCase())}): ${jobHtml(job)}\\n\\n` +\n        `${esc(cut(preview, 2600))}\\n\\n` +\n        `👉 Check / edit it in the sheet (DraftDE / DraftEN), then set Status to <b>Approved</b>.\\n${esc(sheetLink())}`,\n      4000,\n    ),\n  },\n};\n"
+      },
+      "id": "c58673d8-76fc-480a-93f6-c6d1051f53a5",
+      "name": "WF2 · Read the letters",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('CONFIG').first().json.config.SHEET_ID }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Jobs"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "JobID"
+          ],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "8e760cdd-c1bc-4e5f-bbe8-819f64a0a039",
+      "name": "WF2 · Save drafts in sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        848,
+        672
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "manisha testing account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('CONFIG').first().json.config.SHEET_ID }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Log"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "7c7ba3ae-8b8b-41cb-b8e0-ab4000b7cea0",
+      "name": "WF2 · Write log",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1056,
+        672
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "manisha testing account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{ $('CONFIG').first().json.config.TELEGRAM_CHAT_ID && $json._tg ? 0 : 1 }}"
+      },
+      "id": "619e5cf6-6617-45a0-b434-7961d16d1577",
+      "name": "WF2 · Telegram on?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1280,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('CONFIG').first().json.config.TELEGRAM_CHAT_ID }}",
+        "text": "={{ $json._tg }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "55beff51-2b47-45cc-a720-39eaeb70ad9b",
+      "name": "WF2 · Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1504,
+        640
+      ],
+      "webhookId": "59596781-c1eb-4fe4-aace-3da476d0a5dd",
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Telegram account 2"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('CONFIG').first().json.config.SHEET_ID }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Jobs"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Status",
+              "lookupValue": "Approved"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8bf303f3-943e-4f58-b058-53e69a6a32e0",
+      "name": "WF3 · Read Approved jobs",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -496,
+        1200
+      ],
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "manisha testing account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "maxItems": "={{ $('CONFIG').first().json.config.MAX_SENDS_PER_RUN }}"
+      },
+      "id": "3a8e4a62-32f6-4d21-a4c1-7e620010993f",
+      "name": "WF3 · Limit per run",
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        -272,
+        1200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── shared helpers (same in every Code node) ──────────────────────────────\nconst C = $('CONFIG').first().json.config;\nconst TZ = 'Europe/Berlin';\nfunction todayISO() {\n  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());\n}\nfunction nowStamp() {\n  const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date()).map((x) => [x.type, x.value]));\n  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`;\n}\n/** Accepts 2026-10-13, 13.10.2026, 10/13/2026 or a Google Sheets serial number. Returns a UTC midnight Date or null. */\nfunction parseDate(v) {\n  if (v === null || v === undefined || v === '') return null;\n  if (typeof v === 'number' && isFinite(v)) return new Date(Date.UTC(1899, 11, 30) + Math.round(v) * 86400000);\n  const s = String(v).trim();\n  let m = s.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})/);\n  if (m) return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));\n  m = s.match(/^(\\d{1,2})\\.(\\d{1,2})\\.(\\d{4})/);\n  if (m) return new Date(Date.UTC(+m[3], +m[2] - 1, +m[1]));\n  m = s.match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})/);\n  if (m) return new Date(Date.UTC(+m[3], +m[1] - 1, +m[2]));\n  return null;\n}\nfunction daysSince(v) {\n  const d = parseDate(v);\n  return d ? Math.round((parseDate(todayISO()) - d) / 86400000) : null;\n}\nfunction deDate(v) {\n  const d = parseDate(v);\n  return d ? `${String(d.getUTCDate()).padStart(2, '0')}.${String(d.getUTCMonth() + 1).padStart(2, '0')}.${d.getUTCFullYear()}` : String(v || '');\n}\nfunction validEmail(s) {\n  return /^[^\\s@<>()\",;]+@[^\\s@<>()\",;]+\\.[a-z]{2,}$/i.test(String(s || '').trim());\n}\n/** Telegram messages use HTML: these three characters must be escaped. */\nfunction esc(s) {\n  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n}\nfunction cut(s, n) {\n  s = String(s ?? '');\n  return s.length > n ? s.slice(0, n - 1) + '…' : s;\n}\nfunction addNote(old, text) {\n  const o = String(old || '').trim();\n  return cut(o ? `${o} | ${text}` : text, 1000);\n}\nfunction sheetLink() {\n  return `https://docs.google.com/spreadsheets/d/${C.SHEET_ID}`;\n}\n/** \"Title @ Company\" without a dangling \"@\" when the company is unknown */\nfunction who(j) {\n  return [j.JobTitle, j.Company].filter(Boolean).join(' @ ') || j.JobID;\n}\n/** Telegram: linked title + \" — Company\" (only when known) */\nfunction jobHtml(j) {\n  const t = j.JobURL ? `<a href=\"${esc(j.JobURL)}\">${esc(cut(j.JobTitle || j.JobID, 80))}</a>` : esc(cut(j.JobTitle || j.JobID, 80));\n  return j.Company ? `${t} — ${esc(cut(j.Company, 60))}` : t;\n}\nfunction logFields(workflow, action, result) {\n  return { Timestamp: nowStamp(), Workflow: workflow, Action: action, Result: cut(result, 500) };\n}\n// ──────────────────────────────────────────────────────────────────────────\n\n// Approved jobs → e-mail (company address from the job post) or \"Manual Apply\" (job boards).\nif (C.TEST_MODE && !validEmail(C.CANDIDATE_EMAIL)) throw new Error('TEST_MODE is on, but CANDIDATE_EMAIL in CONFIG is not a valid address.');\nreturn $input.all().map((it) => {\n  const j = it.json;\n  const useEN = String(j.Language || '').toUpperCase() === 'EN' && String(j.DraftEN || '').trim();\n  const body = String(useEN ? j.DraftEN : j.DraftDE || j.DraftEN || '').trim();\n  const company = String(j.CompanyEmail || '').trim();\n  const hasEmail = validEmail(company);\n  let subject = useEN ? `Application: ${j.JobTitle} – ${C.CANDIDATE_NAME}` : `Bewerbung als ${j.JobTitle} – ${C.CANDIDATE_NAME}`;\n  if (C.TEST_MODE) subject = `[TEST → ${company || 'no company e-mail'}] ${subject}`;\n  return {\n    json: {\n      ...j,\n      _route: hasEmail && body ? 0 : 1,\n      _reason: !body ? 'no draft text' : !hasEmail ? 'no company e-mail in the job post' : '',\n      _to: C.TEST_MODE ? String(C.CANDIDATE_EMAIL).trim() : company,\n      _subject: cut(subject, 200),\n      _body: body,\n      _lang: useEN ? 'EN' : 'DE',\n    },\n  };\n});\n"
+      },
+      "id": "882a9874-e625-4273-9eb6-74d21ab9e65d",
+      "name": "WF3 · Prepare applications",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -48,
+        1200
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{ $json._route }}"
+      },
+      "id": "d84647b0-3f9e-4a61-9f07-edb2c941c681",
+      "name": "WF3 · Company e-mail?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        176,
+        1200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── shared helpers (same in every Code node) ──────────────────────────────\nconst C = $('CONFIG').first().json.config;\nconst TZ = 'Europe/Berlin';\nfunction todayISO() {\n  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());\n}\nfunction nowStamp() {\n  const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date()).map((x) => [x.type, x.value]));\n  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`;\n}\n/** Accepts 2026-10-13, 13.10.2026, 10/13/2026 or a Google Sheets serial number. Returns a UTC midnight Date or null. */\nfunction parseDate(v) {\n  if (v === null || v === undefined || v === '') return null;\n  if (typeof v === 'number' && isFinite(v)) return new Date(Date.UTC(1899, 11, 30) + Math.round(v) * 86400000);\n  const s = String(v).trim();\n  let m = s.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})/);\n  if (m) return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));\n  m = s.match(/^(\\d{1,2})\\.(\\d{1,2})\\.(\\d{4})/);\n  if (m) return new Date(Date.UTC(+m[3], +m[2] - 1, +m[1]));\n  m = s.match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})/);\n  if (m) return new Date(Date.UTC(+m[3], +m[1] - 1, +m[2]));\n  return null;\n}\nfunction daysSince(v) {\n  const d = parseDate(v);\n  return d ? Math.round((parseDate(todayISO()) - d) / 86400000) : null;\n}\nfunction deDate(v) {\n  const d = parseDate(v);\n  return d ? `${String(d.getUTCDate()).padStart(2, '0')}.${String(d.getUTCMonth() + 1).padStart(2, '0')}.${d.getUTCFullYear()}` : String(v || '');\n}\nfunction validEmail(s) {\n  return /^[^\\s@<>()\",;]+@[^\\s@<>()\",;]+\\.[a-z]{2,}$/i.test(String(s || '').trim());\n}\n/** Telegram messages use HTML: these three characters must be escaped. */\nfunction esc(s) {\n  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n}\nfunction cut(s, n) {\n  s = String(s ?? '');\n  return s.length > n ? s.slice(0, n - 1) + '…' : s;\n}\nfunction addNote(old, text) {\n  const o = String(old || '').trim();\n  return cut(o ? `${o} | ${text}` : text, 1000);\n}\nfunction sheetLink() {\n  return `https://docs.google.com/spreadsheets/d/${C.SHEET_ID}`;\n}\n/** \"Title @ Company\" without a dangling \"@\" when the company is unknown */\nfunction who(j) {\n  return [j.JobTitle, j.Company].filter(Boolean).join(' @ ') || j.JobID;\n}\n/** Telegram: linked title + \" — Company\" (only when known) */\nfunction jobHtml(j) {\n  const t = j.JobURL ? `<a href=\"${esc(j.JobURL)}\">${esc(cut(j.JobTitle || j.JobID, 80))}</a>` : esc(cut(j.JobTitle || j.JobID, 80));\n  return j.Company ? `${t} — ${esc(cut(j.Company, 60))}` : t;\n}\nfunction logFields(workflow, action, result) {\n  return { Timestamp: nowStamp(), Workflow: workflow, Action: action, Result: cut(result, 500) };\n}\n// ──────────────────────────────────────────────────────────────────────────\n\n// Attach the CV (embedded here as base64 — no Google Drive needed).\nconst CV_BASE64 = 'REPLACE_WITH_YOUR_BASE64_ENCODED_CV_PDF';\nconst file = { data: CV_BASE64, mimeType: 'application/pdf', fileName: C.CV_FILE_NAME || 'CV.pdf', fileExtension: 'pdf' };\nreturn $('WF3 · Prepare applications').all()\n  .filter((it) => it.json._route === 0)\n  .map((it) => ({ json: it.json, binary: { data: file } }));\n"
+      },
+      "id": "8640ea67-3f4e-490f-aff8-2b7111a6f61e",
+      "name": "WF3 · Attach CV",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        1088
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json._to }}",
+        "subject": "={{ $json._subject }}",
+        "emailType": "text",
+        "message": "={{ $json._body }}",
+        "options": {
+          "appendAttribution": false,
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {}
+            ]
+          },
+          "senderName": "={{ $('CONFIG').first().json.config.CANDIDATE_NAME }}",
+          "replyTo": "={{ $('CONFIG').first().json.config.CANDIDATE_EMAIL }}"
+        }
+      },
+      "id": "87e6d2ec-bb04-4934-86c6-f17797e6c97b",
+      "name": "WF3 · Send application (Gmail)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        848,
+        1088
+      ],
+      "webhookId": "02892fdc-ab09-44dc-9338-d1b721975c95",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "",
+          "name": "Manisha Gmail account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// ── shared helpers (same in every Code node) ──────────────────────────────\nconst C = $('CONFIG').first().json.config;\nconst TZ = 'Europe/Berlin';\nfunction todayISO() {\n  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());\n}\nfunction nowStamp() {\n  const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date()).map((x) => [x.type, x.value]));\n  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`;\n}\n/** Accepts 2026-10-13, 13.10.2026, 10/13/2026 or a Google Sheets serial number. Returns a UTC midnight Date or null. */\nfunction parseDate(v) {\n  if (v === null || v === undefined || v === '') return null;\n  if (typeof v === 'number' && isFinite(v)) return new Date(Date.UTC(1899, 11, 30) + Math.round(v) * 86400000);\n  const s = String(v).trim();\n  let m = s.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})/);\n  if (m) return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));\n  m = s.match(/^(\\d{1,2})\\.(\\d{1,2})\\.(\\d{4})/);\n  if (m) return new Date(Date.UTC(+m[3], +m[2] - 1, +m[1]));\n  m = s.match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})/);\n  if (m) return new Date(Date.UTC(+m[3], +m[1] - 1, +m[2]));\n  return null;\n}\nfunction daysSince(v) {\n  const d = parseDate(v);\n  return d ? Math.round((parseDate(todayISO()) - d) / 86400000) : null;\n}\nfunction deDate(v) {\n  const d = parseDate(v);\n  return d ? `${String(d.getUTCDate()).padStart(2, '0')}.${String(d.getUTCMonth() + 1).padStart(2, '0')}.${d.getUTCFullYear()}` : String(v || '');\n}\nfunction validEmail(s) {\n  return /^[^\\s@<>()\",;]+@[^\\s@<>()\",;]+\\.[a-z]{2,}$/i.test(String(s || '').trim());\n}\n/** Telegram messages use HTML: these three characters must be escaped. */\nfunction esc(s) {\n  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n}\nfunction cut(s, n) {\n  s = String(s ?? '');\n  return s.length > n ? s.slice(0, n - 1) + '…' : s;\n}\nfunction addNote(old, text) {\n  const o = String(old || '').trim();\n  return cut(o ? `${o} | ${text}` : text, 1000);\n}\nfunction sheetLink() {\n  return `https://docs.google.com/spreadsheets/d/${C.SHEET_ID}`;\n}\n/** \"Title @ Company\" without a dangling \"@\" when the company is unknown */\nfunction who(j) {\n  return [j.JobTitle, j.Company].filter(Boolean).join(' @ ') || j.JobID;\n}\n/** Telegram: linked title + \" — Company\" (only when known) */\nfunction jobHtml(j) {\n  const t = j.JobURL ? `<a href=\"${esc(j.JobURL)}\">${esc(cut(j.JobTitle || j.JobID, 80))}</a>` : esc(cut(j.JobTitle || j.JobID, 80));\n  return j.Company ? `${t} — ${esc(cut(j.Company, 60))}` : t;\n}\nfunction logFields(workflow, action, result) {\n  return { Timestamp: nowStamp(), Workflow: workflow, Action: action, Result: cut(result, 500) };\n}\n// ──────────────────────────────────────────────────────────────────────────\n\n// After Gmail: Applied (or, if sending failed, Manual Apply with the reason — never retried blindly).\nconst a = $('WF3 · Attach CV').item.json;\nif ($json.error) {\n  const msg = typeof $json.error === 'string' ? $json.error : $json.error.message || JSON.stringify($json.error);\n  return {\n    json: {\n      JobID: a.JobID,\n      Status: 'Manual Apply',\n      Notes: addNote(a.Notes, `${todayISO()} e-mail failed: ${cut(msg, 200)}`),\n      ...logFields('WF3 Sender', 'send failed', `${a.JobID} · ${who(a)} · ${msg}`),\n      _tg: `⚠️ <b>Sending failed</b> — please apply by hand: ${jobHtml(a)}\\n${esc(cut(msg, 300))}`,\n    },\n  };\n}\nreturn {\n  json: {\n    JobID: a.JobID,\n    Status: 'Applied',\n    DateApplied: todayISO(),\n    Notes: C.TEST_MODE ? addNote(a.Notes, `${todayISO()} TEST: application sent to ${a._to} instead of ${a.CompanyEmail}`) : a.Notes || '',\n    ...logFields('WF3 Sender', C.TEST_MODE ? 'applied (TEST)' : 'applied', `${a.JobID} · ${who(a)} · to ${a._to} (${a._lang})`),\n    _tg: `📨 <b>Application sent</b>${C.TEST_MODE ? ' (TEST → your own inbox)' : ''}: ${jobHtml(a)}\\nTo: ${esc(a._to)}`,\n  },\n};\n"
+      },
+      "id": "54ff6683-ca2e-4849-8688-f73adc2b86e6",
+      "name": "WF3 · Mark applied",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1056,
+        1088
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// ── shared helpers (same in every Code node) ──────────────────────────────\nconst C = $('CONFIG').first().json.config;\nconst TZ = 'Europe/Berlin';\nfunction todayISO() {\n  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());\n}\nfunction nowStamp() {\n  const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date()).map((x) => [x.type, x.value]));\n  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`;\n}\n/** Accepts 2026-10-13, 13.10.2026, 10/13/2026 or a Google Sheets serial number. Returns a UTC midnight Date or null. */\nfunction parseDate(v) {\n  if (v === null || v === undefined || v === '') return null;\n  if (typeof v === 'number' && isFinite(v)) return new Date(Date.UTC(1899, 11, 30) + Math.round(v) * 86400000);\n  const s = String(v).trim();\n  let m = s.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})/);\n  if (m) return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));\n  m = s.match(/^(\\d{1,2})\\.(\\d{1,2})\\.(\\d{4})/);\n  if (m) return new Date(Date.UTC(+m[3], +m[2] - 1, +m[1]));\n  m = s.match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})/);\n  if (m) return new Date(Date.UTC(+m[3], +m[1] - 1, +m[2]));\n  return null;\n}\nfunction daysSince(v) {\n  const d = parseDate(v);\n  return d ? Math.round((parseDate(todayISO()) - d) / 86400000) : null;\n}\nfunction deDate(v) {\n  const d = parseDate(v);\n  return d ? `${String(d.getUTCDate()).padStart(2, '0')}.${String(d.getUTCMonth() + 1).padStart(2, '0')}.${d.getUTCFullYear()}` : String(v || '');\n}\nfunction validEmail(s) {\n  return /^[^\\s@<>()\",;]+@[^\\s@<>()\",;]+\\.[a-z]{2,}$/i.test(String(s || '').trim());\n}\n/** Telegram messages use HTML: these three characters must be escaped. */\nfunction esc(s) {\n  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n}\nfunction cut(s, n) {\n  s = String(s ?? '');\n  return s.length > n ? s.slice(0, n - 1) + '…' : s;\n}\nfunction addNote(old, text) {\n  const o = String(old || '').trim();\n  return cut(o ? `${o} | ${text}` : text, 1000);\n}\nfunction sheetLink() {\n  return `https://docs.google.com/spreadsheets/d/${C.SHEET_ID}`;\n}\n/** \"Title @ Company\" without a dangling \"@\" when the company is unknown */\nfunction who(j) {\n  return [j.JobTitle, j.Company].filter(Boolean).join(' @ ') || j.JobID;\n}\n/** Telegram: linked title + \" — Company\" (only when known) */\nfunction jobHtml(j) {\n  const t = j.JobURL ? `<a href=\"${esc(j.JobURL)}\">${esc(cut(j.JobTitle || j.JobID, 80))}</a>` : esc(cut(j.JobTitle || j.JobID, 80));\n  return j.Company ? `${t} — ${esc(cut(j.Company, 60))}` : t;\n}\nfunction logFields(workflow, action, result) {\n  return { Timestamp: nowStamp(), Workflow: workflow, Action: action, Result: cut(result, 500) };\n}\n// ──────────────────────────────────────────────────────────────────────────\n\n// No company e-mail (job boards like LinkedIn/StepStone/Indeed forbid auto-apply): Gurwinder applies by hand.\nconst j = $json;\nreturn {\n  json: {\n    JobID: j.JobID,\n    Status: 'Manual Apply',\n    Notes: addNote(j.Notes, `${todayISO()} manual apply: ${j._reason}`),\n    ...logFields('WF3 Sender', 'manual apply', `${j.JobID} · ${who(j)} · ${j._reason}`),\n    _tg: cut(\n      `🖐 <b>Please apply by hand</b> (${esc(j._reason)}): ${jobHtml(j)}\\n\\n` +\n        `Your ${j._lang === 'EN' ? 'English' : 'German'} letter:\\n${esc(cut(j._body || '(no draft)', 2600))}\\n\\n` +\n        `When done, set Status to <b>Applied</b> and DateApplied in the sheet.`,\n      4000,\n    ),\n  },\n};\n"
+      },
+      "id": "d0942c7f-e421-482b-b682-046ef384019e",
+      "name": "WF3 · Mark manual apply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        1312
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "1a53f94a-da24-4955-ad93-1d82bb5cf127",
+      "name": "WF3 · Merge",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1280,
+        1200
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('CONFIG').first().json.config.SHEET_ID }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Jobs"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "JobID"
+          ],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "2d39bf52-ac01-4ca4-8db8-f3b619c93c0b",
+      "name": "WF3 · Update sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1504,
+        1200
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "manisha testing account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('CONFIG').first().json.config.SHEET_ID }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Log"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "0cdeda60-a7ea-419e-8284-a0a2c6225172",
+      "name": "WF3 · Write log",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1728,
+        1200
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "manisha testing account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{ $('CONFIG').first().json.config.TELEGRAM_CHAT_ID && $json._tg ? 0 : 1 }}"
+      },
+      "id": "196dcd0e-c2bf-411c-a657-96a952830810",
+      "name": "WF3 · Telegram on?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1936,
+        1200
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('CONFIG').first().json.config.TELEGRAM_CHAT_ID }}",
+        "text": "={{ $json._tg }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "3068b1cc-ab35-40c5-8b0e-a8084ee2c4d8",
+      "name": "WF3 · Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2160,
+        1184
+      ],
+      "webhookId": "d0b05a0b-36de-400a-9b3d-586be55b0f83",
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Telegram account 2"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('CONFIG').first().json.config.SHEET_ID }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Jobs"
+        },
+        "options": {}
+      },
+      "id": "5c427f33-32f9-4ee7-ad6e-1981bf752d18",
+      "name": "WF4 · Read all jobs",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -496,
+        1792
+      ],
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "manisha testing account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── shared helpers (same in every Code node) ──────────────────────────────\nconst C = $('CONFIG').first().json.config;\nconst TZ = 'Europe/Berlin';\nfunction todayISO() {\n  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());\n}\nfunction nowStamp() {\n  const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date()).map((x) => [x.type, x.value]));\n  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`;\n}\n/** Accepts 2026-10-13, 13.10.2026, 10/13/2026 or a Google Sheets serial number. Returns a UTC midnight Date or null. */\nfunction parseDate(v) {\n  if (v === null || v === undefined || v === '') return null;\n  if (typeof v === 'number' && isFinite(v)) return new Date(Date.UTC(1899, 11, 30) + Math.round(v) * 86400000);\n  const s = String(v).trim();\n  let m = s.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})/);\n  if (m) return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));\n  m = s.match(/^(\\d{1,2})\\.(\\d{1,2})\\.(\\d{4})/);\n  if (m) return new Date(Date.UTC(+m[3], +m[2] - 1, +m[1]));\n  m = s.match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})/);\n  if (m) return new Date(Date.UTC(+m[3], +m[1] - 1, +m[2]));\n  return null;\n}\nfunction daysSince(v) {\n  const d = parseDate(v);\n  return d ? Math.round((parseDate(todayISO()) - d) / 86400000) : null;\n}\nfunction deDate(v) {\n  const d = parseDate(v);\n  return d ? `${String(d.getUTCDate()).padStart(2, '0')}.${String(d.getUTCMonth() + 1).padStart(2, '0')}.${d.getUTCFullYear()}` : String(v || '');\n}\nfunction validEmail(s) {\n  return /^[^\\s@<>()\",;]+@[^\\s@<>()\",;]+\\.[a-z]{2,}$/i.test(String(s || '').trim());\n}\n/** Telegram messages use HTML: these three characters must be escaped. */\nfunction esc(s) {\n  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n}\nfunction cut(s, n) {\n  s = String(s ?? '');\n  return s.length > n ? s.slice(0, n - 1) + '…' : s;\n}\nfunction addNote(old, text) {\n  const o = String(old || '').trim();\n  return cut(o ? `${o} | ${text}` : text, 1000);\n}\nfunction sheetLink() {\n  return `https://docs.google.com/spreadsheets/d/${C.SHEET_ID}`;\n}\n/** \"Title @ Company\" without a dangling \"@\" when the company is unknown */\nfunction who(j) {\n  return [j.JobTitle, j.Company].filter(Boolean).join(' @ ') || j.JobID;\n}\n/** Telegram: linked title + \" — Company\" (only when known) */\nfunction jobHtml(j) {\n  const t = j.JobURL ? `<a href=\"${esc(j.JobURL)}\">${esc(cut(j.JobTitle || j.JobID, 80))}</a>` : esc(cut(j.JobTitle || j.JobID, 80));\n  return j.Company ? `${t} — ${esc(cut(j.Company, 60))}` : t;\n}\nfunction logFields(workflow, action, result) {\n  return { Timestamp: nowStamp(), Workflow: workflow, Action: action, Result: cut(result, 500) };\n}\n// ──────────────────────────────────────────────────────────────────────────\n\n// Daily: which follow-ups are due?\n//  Applied      + DateApplied   ≥ 7 days + FollowUp1Date empty → follow-up e-mail 1 → \"Follow-up 1\"\n//  Follow-up 1  + FollowUp1Date ≥ 7 days + FollowUp2Date empty → follow-up e-mail 2 → \"Follow-up 2\"\n//  Manual Apply → reminder to Gurwinder (never an e-mail to the company)\nconst sig = [C.CANDIDATE_NAME, C.CANDIDATE_EMAIL && !String(C.CANDIDATE_EMAIL).startsWith('PASTE_') ? C.CANDIDATE_EMAIL : '', C.CANDIDATE_PHONE].filter(Boolean).join('\\n');\nconst letter = (n, j) => {\n  const en = String(j.Language || '').toUpperCase() === 'EN';\n  const when = en ? String(j.DateApplied || '') : deDate(j.DateApplied);\n  if (en)\n    return n === 1\n      ? `Dear Sir or Madam,\\n\\non ${when} I applied for the position \"${j.JobTitle}\". I would like to kindly ask whether my application has arrived and how the process is going. I am happy to send further information or a short work sample.\\n\\nKind regards\\n${sig}`\n      : `Dear Sir or Madam,\\n\\nI am following up once more on my application for \"${j.JobTitle}\" from ${when}. I am still very interested in the position and in contributing to your team. Please let me know if you need anything else from me.\\n\\nKind regards\\n${sig}`;\n  return n === 1\n    ? `Sehr geehrte Damen und Herren,\\n\\nam ${when} habe ich mich auf die Stelle „${j.JobTitle}“ beworben. Ich möchte freundlich nachfragen, ob meine Unterlagen angekommen sind und wie der aktuelle Stand ist. Gern sende ich Ihnen weitere Informationen oder eine kurze Arbeitsprobe.\\n\\nMit freundlichen Grüßen\\n${sig}`\n    : `Sehr geehrte Damen und Herren,\\n\\nich melde mich noch einmal zu meiner Bewerbung vom ${when} als „${j.JobTitle}“. Ich bin weiterhin sehr an der Stelle interessiert und würde mich freuen, mein Können in Ihr Team einzubringen. Benötigen Sie noch etwas von mir?\\n\\nMit freundlichen Grüßen\\n${sig}`;\n};\nif (C.TEST_MODE && !validEmail(C.CANDIDATE_EMAIL)) throw new Error('TEST_MODE is on, but CANDIDATE_EMAIL in CONFIG is not a valid address.');\nconst out = [];\nfor (const it of $input.all()) {\n  const j = it.json;\n  if (!j.JobID) continue;\n  const status = String(j.Status || '').trim();\n  const company = String(j.CompanyEmail || '').trim();\n  const en = String(j.Language || '').toUpperCase() === 'EN';\n  const mail = (n) => {\n    let subject = en ? `Follow-up: application for ${j.JobTitle}` : `Nachfrage: Bewerbung als ${j.JobTitle}`;\n    if (C.TEST_MODE) subject = `[TEST → ${company}] ${subject}`;\n    return { _to: C.TEST_MODE ? String(C.CANDIDATE_EMAIL).trim() : company, _subject: cut(subject, 200), _body: letter(n, j) };\n  };\n  if (status === 'Applied' && validEmail(company) && !j.FollowUp1Date && (daysSince(j.DateApplied) ?? -1) >= C.FOLLOWUP_1_AFTER_DAYS) {\n    out.push({ json: { ...j, _route: 0, _n: 1, ...mail(1) } });\n  } else if (status === 'Follow-up 1' && validEmail(company) && !j.FollowUp2Date && (daysSince(j.FollowUp1Date) ?? -1) >= C.FOLLOWUP_2_AFTER_DAYS) {\n    out.push({ json: { ...j, _route: 0, _n: 2, ...mail(2) } });\n  } else if (status === 'Manual Apply' && !j.FollowUp1Date && (daysSince(j.DateFound) ?? 999) >= C.MANUAL_REMINDER_AFTER_DAYS) {\n    out.push({ json: { ...j, _route: 1, _n: 1 } });\n  } else if (status === 'Manual Apply' && j.FollowUp1Date && !j.FollowUp2Date && (daysSince(j.FollowUp1Date) ?? -1) >= 7) {\n    out.push({ json: { ...j, _route: 1, _n: 2 } });\n  }\n}\nreturn out.slice(0, Number(C.MAX_FOLLOWUPS_PER_RUN) || 10);\n"
+      },
+      "id": "844465b1-7f21-417c-9f97-4863b3129bd6",
+      "name": "WF4 · Find due follow-ups",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -272,
+        1792
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{ $json._route }}"
+      },
+      "id": "2e030ddc-5dbb-41a6-aa0b-ef3213f4fdd7",
+      "name": "WF4 · E-mail or reminder?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -48,
+        1792
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json._to }}",
+        "subject": "={{ $json._subject }}",
+        "emailType": "text",
+        "message": "={{ $json._body }}",
+        "options": {
+          "appendAttribution": false,
+          "senderName": "={{ $('CONFIG').first().json.config.CANDIDATE_NAME }}",
+          "replyTo": "={{ $('CONFIG').first().json.config.CANDIDATE_EMAIL }}"
+        }
+      },
+      "id": "c750e939-8c1f-4ace-9258-420bcfcbc553",
+      "name": "WF4 · Send follow-up (Gmail)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        176,
+        1664
+      ],
+      "webhookId": "9e07efa8-3735-41bd-852e-346114b31690",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "",
+          "name": "Manisha Gmail account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// ── shared helpers (same in every Code node) ──────────────────────────────\nconst C = $('CONFIG').first().json.config;\nconst TZ = 'Europe/Berlin';\nfunction todayISO() {\n  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());\n}\nfunction nowStamp() {\n  const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date()).map((x) => [x.type, x.value]));\n  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`;\n}\n/** Accepts 2026-10-13, 13.10.2026, 10/13/2026 or a Google Sheets serial number. Returns a UTC midnight Date or null. */\nfunction parseDate(v) {\n  if (v === null || v === undefined || v === '') return null;\n  if (typeof v === 'number' && isFinite(v)) return new Date(Date.UTC(1899, 11, 30) + Math.round(v) * 86400000);\n  const s = String(v).trim();\n  let m = s.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})/);\n  if (m) return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));\n  m = s.match(/^(\\d{1,2})\\.(\\d{1,2})\\.(\\d{4})/);\n  if (m) return new Date(Date.UTC(+m[3], +m[2] - 1, +m[1]));\n  m = s.match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})/);\n  if (m) return new Date(Date.UTC(+m[3], +m[1] - 1, +m[2]));\n  return null;\n}\nfunction daysSince(v) {\n  const d = parseDate(v);\n  return d ? Math.round((parseDate(todayISO()) - d) / 86400000) : null;\n}\nfunction deDate(v) {\n  const d = parseDate(v);\n  return d ? `${String(d.getUTCDate()).padStart(2, '0')}.${String(d.getUTCMonth() + 1).padStart(2, '0')}.${d.getUTCFullYear()}` : String(v || '');\n}\nfunction validEmail(s) {\n  return /^[^\\s@<>()\",;]+@[^\\s@<>()\",;]+\\.[a-z]{2,}$/i.test(String(s || '').trim());\n}\n/** Telegram messages use HTML: these three characters must be escaped. */\nfunction esc(s) {\n  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n}\nfunction cut(s, n) {\n  s = String(s ?? '');\n  return s.length > n ? s.slice(0, n - 1) + '…' : s;\n}\nfunction addNote(old, text) {\n  const o = String(old || '').trim();\n  return cut(o ? `${o} | ${text}` : text, 1000);\n}\nfunction sheetLink() {\n  return `https://docs.google.com/spreadsheets/d/${C.SHEET_ID}`;\n}\n/** \"Title @ Company\" without a dangling \"@\" when the company is unknown */\nfunction who(j) {\n  return [j.JobTitle, j.Company].filter(Boolean).join(' @ ') || j.JobID;\n}\n/** Telegram: linked title + \" — Company\" (only when known) */\nfunction jobHtml(j) {\n  const t = j.JobURL ? `<a href=\"${esc(j.JobURL)}\">${esc(cut(j.JobTitle || j.JobID, 80))}</a>` : esc(cut(j.JobTitle || j.JobID, 80));\n  return j.Company ? `${t} — ${esc(cut(j.Company, 60))}` : t;\n}\nfunction logFields(workflow, action, result) {\n  return { Timestamp: nowStamp(), Workflow: workflow, Action: action, Result: cut(result, 500) };\n}\n// ──────────────────────────────────────────────────────────────────────────\n\n// After the follow-up e-mail: set FollowUpNDate + Status (if sending failed: note, unchanged, retried tomorrow).\nconst j = $('WF4 · Find due follow-ups').item.json;\nif ($json.error) {\n  const msg = typeof $json.error === 'string' ? $json.error : $json.error.message || JSON.stringify($json.error);\n  return {\n    json: {\n      JobID: j.JobID,\n      Notes: addNote(j.Notes, `${todayISO()} follow-up ${j._n} failed: ${cut(msg, 200)}`),\n      ...logFields('WF4 Follow-up', `follow-up ${j._n} failed`, `${j.JobID} · ${who(j)} · ${msg}`),\n      _tg: `⚠️ <b>Follow-up ${j._n} failed</b> for ${jobHtml(j)}\\n${esc(cut(msg, 300))}`,\n    },\n  };\n}\nconst upd = j._n === 1 ? { FollowUp1Date: todayISO(), Status: 'Follow-up 1' } : { FollowUp2Date: todayISO(), Status: 'Follow-up 2' };\nreturn {\n  json: {\n    JobID: j.JobID,\n    ...upd,\n    ...(C.TEST_MODE ? { Notes: addNote(j.Notes, `${todayISO()} TEST: follow-up ${j._n} sent to ${j._to}`) } : {}),\n    ...logFields('WF4 Follow-up', `follow-up ${j._n}${C.TEST_MODE ? ' (TEST)' : ''}`, `${j.JobID} · ${who(j)} · to ${j._to}`),\n    _tg: `🔁 <b>Follow-up ${j._n} sent</b>${C.TEST_MODE ? ' (TEST → your own inbox)' : ''}: ${jobHtml(j)}`,\n  },\n};\n"
+      },
+      "id": "8c163f92-7f4e-4dcc-9938-c2e1fc986914",
+      "name": "WF4 · Mark follow-up",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        1664
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// ── shared helpers (same in every Code node) ──────────────────────────────\nconst C = $('CONFIG').first().json.config;\nconst TZ = 'Europe/Berlin';\nfunction todayISO() {\n  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());\n}\nfunction nowStamp() {\n  const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date()).map((x) => [x.type, x.value]));\n  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`;\n}\n/** Accepts 2026-10-13, 13.10.2026, 10/13/2026 or a Google Sheets serial number. Returns a UTC midnight Date or null. */\nfunction parseDate(v) {\n  if (v === null || v === undefined || v === '') return null;\n  if (typeof v === 'number' && isFinite(v)) return new Date(Date.UTC(1899, 11, 30) + Math.round(v) * 86400000);\n  const s = String(v).trim();\n  let m = s.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})/);\n  if (m) return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));\n  m = s.match(/^(\\d{1,2})\\.(\\d{1,2})\\.(\\d{4})/);\n  if (m) return new Date(Date.UTC(+m[3], +m[2] - 1, +m[1]));\n  m = s.match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})/);\n  if (m) return new Date(Date.UTC(+m[3], +m[1] - 1, +m[2]));\n  return null;\n}\nfunction daysSince(v) {\n  const d = parseDate(v);\n  return d ? Math.round((parseDate(todayISO()) - d) / 86400000) : null;\n}\nfunction deDate(v) {\n  const d = parseDate(v);\n  return d ? `${String(d.getUTCDate()).padStart(2, '0')}.${String(d.getUTCMonth() + 1).padStart(2, '0')}.${d.getUTCFullYear()}` : String(v || '');\n}\nfunction validEmail(s) {\n  return /^[^\\s@<>()\",;]+@[^\\s@<>()\",;]+\\.[a-z]{2,}$/i.test(String(s || '').trim());\n}\n/** Telegram messages use HTML: these three characters must be escaped. */\nfunction esc(s) {\n  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n}\nfunction cut(s, n) {\n  s = String(s ?? '');\n  return s.length > n ? s.slice(0, n - 1) + '…' : s;\n}\nfunction addNote(old, text) {\n  const o = String(old || '').trim();\n  return cut(o ? `${o} | ${text}` : text, 1000);\n}\nfunction sheetLink() {\n  return `https://docs.google.com/spreadsheets/d/${C.SHEET_ID}`;\n}\n/** \"Title @ Company\" without a dangling \"@\" when the company is unknown */\nfunction who(j) {\n  return [j.JobTitle, j.Company].filter(Boolean).join(' @ ') || j.JobID;\n}\n/** Telegram: linked title + \" — Company\" (only when known) */\nfunction jobHtml(j) {\n  const t = j.JobURL ? `<a href=\"${esc(j.JobURL)}\">${esc(cut(j.JobTitle || j.JobID, 80))}</a>` : esc(cut(j.JobTitle || j.JobID, 80));\n  return j.Company ? `${t} — ${esc(cut(j.Company, 60))}` : t;\n}\nfunction logFields(workflow, action, result) {\n  return { Timestamp: nowStamp(), Workflow: workflow, Action: action, Result: cut(result, 500) };\n}\n// ──────────────────────────────────────────────────────────────────────────\n\n// Text of the reminder e-mail to Gurwinder himself.\nconst j = $json;\nreturn {\n  json: {\n    ...j,\n    _to: String(C.CANDIDATE_EMAIL).trim(),\n    _subject: `Reminder ${j._n}: apply by hand – ${cut(j.JobTitle, 120)}`,\n    _body: `Hello ${C.CANDIDATE_NAME},\\n\\nthis job has no company e-mail, so please apply on the website:\\n\\n${who(j)}\\n${j.JobURL}\\n\\nYour letter is in the sheet (DraftDE / DraftEN). When you have applied, set Status to \"Applied\" and fill in DateApplied:\\n${sheetLink()}\\n`,\n  },\n};\n"
+      },
+      "id": "95c67431-d7d1-44d6-b00e-c67f0d89176a",
+      "name": "WF4 · Reminder e-mail text",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        176,
+        1888
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json._to }}",
+        "subject": "={{ $json._subject }}",
+        "emailType": "text",
+        "message": "={{ $json._body }}",
+        "options": {
+          "appendAttribution": false,
+          "senderName": "={{ $('CONFIG').first().json.config.CANDIDATE_NAME }}"
+        }
+      },
+      "id": "4cbd51c9-f7d8-41f5-85af-24432e7b64e1",
+      "name": "WF4 · Remind Gurwinder (Gmail)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        400,
+        1888
+      ],
+      "webhookId": "db75ae9f-2789-4fbb-9c98-53f463b8a651",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "",
+          "name": "Manisha Gmail account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// ── shared helpers (same in every Code node) ──────────────────────────────\nconst C = $('CONFIG').first().json.config;\nconst TZ = 'Europe/Berlin';\nfunction todayISO() {\n  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());\n}\nfunction nowStamp() {\n  const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date()).map((x) => [x.type, x.value]));\n  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`;\n}\n/** Accepts 2026-10-13, 13.10.2026, 10/13/2026 or a Google Sheets serial number. Returns a UTC midnight Date or null. */\nfunction parseDate(v) {\n  if (v === null || v === undefined || v === '') return null;\n  if (typeof v === 'number' && isFinite(v)) return new Date(Date.UTC(1899, 11, 30) + Math.round(v) * 86400000);\n  const s = String(v).trim();\n  let m = s.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})/);\n  if (m) return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));\n  m = s.match(/^(\\d{1,2})\\.(\\d{1,2})\\.(\\d{4})/);\n  if (m) return new Date(Date.UTC(+m[3], +m[2] - 1, +m[1]));\n  m = s.match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})/);\n  if (m) return new Date(Date.UTC(+m[3], +m[1] - 1, +m[2]));\n  return null;\n}\nfunction daysSince(v) {\n  const d = parseDate(v);\n  return d ? Math.round((parseDate(todayISO()) - d) / 86400000) : null;\n}\nfunction deDate(v) {\n  const d = parseDate(v);\n  return d ? `${String(d.getUTCDate()).padStart(2, '0')}.${String(d.getUTCMonth() + 1).padStart(2, '0')}.${d.getUTCFullYear()}` : String(v || '');\n}\nfunction validEmail(s) {\n  return /^[^\\s@<>()\",;]+@[^\\s@<>()\",;]+\\.[a-z]{2,}$/i.test(String(s || '').trim());\n}\n/** Telegram messages use HTML: these three characters must be escaped. */\nfunction esc(s) {\n  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n}\nfunction cut(s, n) {\n  s = String(s ?? '');\n  return s.length > n ? s.slice(0, n - 1) + '…' : s;\n}\nfunction addNote(old, text) {\n  const o = String(old || '').trim();\n  return cut(o ? `${o} | ${text}` : text, 1000);\n}\nfunction sheetLink() {\n  return `https://docs.google.com/spreadsheets/d/${C.SHEET_ID}`;\n}\n/** \"Title @ Company\" without a dangling \"@\" when the company is unknown */\nfunction who(j) {\n  return [j.JobTitle, j.Company].filter(Boolean).join(' @ ') || j.JobID;\n}\n/** Telegram: linked title + \" — Company\" (only when known) */\nfunction jobHtml(j) {\n  const t = j.JobURL ? `<a href=\"${esc(j.JobURL)}\">${esc(cut(j.JobTitle || j.JobID, 80))}</a>` : esc(cut(j.JobTitle || j.JobID, 80));\n  return j.Company ? `${t} — ${esc(cut(j.Company, 60))}` : t;\n}\nfunction logFields(workflow, action, result) {\n  return { Timestamp: nowStamp(), Workflow: workflow, Action: action, Result: cut(result, 500) };\n}\n// ──────────────────────────────────────────────────────────────────────────\n\n// Manual Apply: remind Gurwinder (e-mail to himself + Telegram), never e-mail the company.\nconst j = $('WF4 · Find due follow-ups').item.json;\nconst upd = j._n === 1 ? { FollowUp1Date: todayISO() } : { FollowUp2Date: todayISO() };\nreturn {\n  json: {\n    JobID: j.JobID,\n    ...upd,\n    ...logFields('WF4 Follow-up', `manual-apply reminder ${j._n}`, `${j.JobID} · ${who(j)}`),\n    _tg: `⏰ <b>Reminder ${j._n}: apply by hand</b> — ${jobHtml(j)}\\nWhen done, set Status to <b>Applied</b> in the sheet.`,\n  },\n};\n"
+      },
+      "id": "5f7a077d-67ba-493f-a1b2-4ee6ce1e77d9",
+      "name": "WF4 · Mark reminder",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        1888
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "27dfd22a-a3dd-459d-8918-3c2957a76415",
+      "name": "WF4 · Merge",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        848,
+        1792
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('CONFIG').first().json.config.SHEET_ID }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Jobs"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "JobID"
+          ],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "4bd9ede8-1541-4937-b093-33a0fa0bc435",
+      "name": "WF4 · Update sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1056,
+        1792
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "manisha testing account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('CONFIG').first().json.config.SHEET_ID }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Log"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "bf27a7cd-a88f-459f-8d62-c4b8f7769cd4",
+      "name": "WF4 · Write log",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1280,
+        1792
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "manisha testing account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{ $('CONFIG').first().json.config.TELEGRAM_CHAT_ID && $json._tg ? 0 : 1 }}"
+      },
+      "id": "7ab17ee4-d25d-40b0-a56d-dd91363776de",
+      "name": "WF4 · Telegram on?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1504,
+        1792
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('CONFIG').first().json.config.TELEGRAM_CHAT_ID }}",
+        "text": "={{ $json._tg }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "ec822a0c-b2a7-4c27-b1b2-1834bd2afc8d",
+      "name": "WF4 · Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1728,
+        1760
+      ],
+      "webhookId": "9234c37a-b7df-4098-9f67-4e67bf6e89c2",
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Telegram account 2"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('CONFIG').first().json.config.SHEET_ID }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Jobs"
+        },
+        "options": {}
+      },
+      "id": "b1a72f0b-f1bb-462d-875c-5cd94ade24a9",
+      "name": "WF5 · Read all jobs",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -496,
+        2368
+      ],
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "manisha testing account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── shared helpers (same in every Code node) ──────────────────────────────\nconst C = $('CONFIG').first().json.config;\nconst TZ = 'Europe/Berlin';\nfunction todayISO() {\n  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());\n}\nfunction nowStamp() {\n  const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date()).map((x) => [x.type, x.value]));\n  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`;\n}\n/** Accepts 2026-10-13, 13.10.2026, 10/13/2026 or a Google Sheets serial number. Returns a UTC midnight Date or null. */\nfunction parseDate(v) {\n  if (v === null || v === undefined || v === '') return null;\n  if (typeof v === 'number' && isFinite(v)) return new Date(Date.UTC(1899, 11, 30) + Math.round(v) * 86400000);\n  const s = String(v).trim();\n  let m = s.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})/);\n  if (m) return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));\n  m = s.match(/^(\\d{1,2})\\.(\\d{1,2})\\.(\\d{4})/);\n  if (m) return new Date(Date.UTC(+m[3], +m[2] - 1, +m[1]));\n  m = s.match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})/);\n  if (m) return new Date(Date.UTC(+m[3], +m[1] - 1, +m[2]));\n  return null;\n}\nfunction daysSince(v) {\n  const d = parseDate(v);\n  return d ? Math.round((parseDate(todayISO()) - d) / 86400000) : null;\n}\nfunction deDate(v) {\n  const d = parseDate(v);\n  return d ? `${String(d.getUTCDate()).padStart(2, '0')}.${String(d.getUTCMonth() + 1).padStart(2, '0')}.${d.getUTCFullYear()}` : String(v || '');\n}\nfunction validEmail(s) {\n  return /^[^\\s@<>()\",;]+@[^\\s@<>()\",;]+\\.[a-z]{2,}$/i.test(String(s || '').trim());\n}\n/** Telegram messages use HTML: these three characters must be escaped. */\nfunction esc(s) {\n  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n}\nfunction cut(s, n) {\n  s = String(s ?? '');\n  return s.length > n ? s.slice(0, n - 1) + '…' : s;\n}\nfunction addNote(old, text) {\n  const o = String(old || '').trim();\n  return cut(o ? `${o} | ${text}` : text, 1000);\n}\nfunction sheetLink() {\n  return `https://docs.google.com/spreadsheets/d/${C.SHEET_ID}`;\n}\n/** \"Title @ Company\" without a dangling \"@\" when the company is unknown */\nfunction who(j) {\n  return [j.JobTitle, j.Company].filter(Boolean).join(' @ ') || j.JobID;\n}\n/** Telegram: linked title + \" — Company\" (only when known) */\nfunction jobHtml(j) {\n  const t = j.JobURL ? `<a href=\"${esc(j.JobURL)}\">${esc(cut(j.JobTitle || j.JobID, 80))}</a>` : esc(cut(j.JobTitle || j.JobID, 80));\n  return j.Company ? `${t} — ${esc(cut(j.Company, 60))}` : t;\n}\nfunction logFields(workflow, action, result) {\n  return { Timestamp: nowStamp(), Workflow: workflow, Action: action, Result: cut(result, 500) };\n}\n// ──────────────────────────────────────────────────────────────────────────\n\n// Monday report: numbers per status + this week's activity.\nconst rows = $input.all().map((i) => i.json).filter((r) => r.JobID);\nconst order = ['New', 'Selected', 'Draft Ready', 'Approved', 'Applied', 'Follow-up 1', 'Follow-up 2', 'Interview', 'Offer', 'Rejected', 'Manual Apply'];\nconst by = {};\nfor (const r of rows) {\n  const s = String(r.Status || 'New').trim() || 'New';\n  by[s] = (by[s] || 0) + 1;\n}\nconst inLast7 = (v) => { const d = daysSince(v); return d !== null && d >= 0 && d < 7; };\nconst foundWeek = rows.filter((r) => inLast7(r.DateFound)).length;\nconst appliedWeek = rows.filter((r) => inLast7(r.DateApplied)).length;\nconst visaYes = rows.filter((r) => r.VisaFlag === 'Yes').length;\nconst applied = ['Applied', 'Follow-up 1', 'Follow-up 2', 'Interview', 'Offer', 'Rejected'].reduce((n, s) => n + (by[s] || 0), 0);\nconst answered = (by.Interview || 0) + (by.Offer || 0) + (by.Rejected || 0);\nconst lines = [...order, ...Object.keys(by).filter((s) => !order.includes(s))].filter((s) => by[s]).map((s) => `${s}: ${by[s]}`);\nconst summary = `${rows.length} jobs · this week ${foundWeek} found, ${appliedWeek} applied · ${applied} applications in total, ${answered} answered (${by.Interview || 0} interviews, ${by.Offer || 0} offers)`;\nconst text = `Weekly job report — ${todayISO()}\\n\\n${summary}\\n\\nBy status:\\n${lines.map((l) => '  ' + l).join('\\n')}\\n\\nVisa-friendly jobs in the sheet: ${visaYes}\\n\\nSheet: ${sheetLink()}`;\nreturn [{\n  json: {\n    ...logFields('WF5 Weekly Report', 'weekly report', summary),\n    _subject: `Weekly job report ${todayISO()}: ${appliedWeek} applied, ${by.Interview || 0} interviews`,\n    _body: text,\n    _tg: cut(`📊 <b>Weekly job report</b>\\n\\n${esc(summary)}\\n\\n${lines.map((l) => '• ' + esc(l)).join('\\n')}\\n\\nVisa-friendly in the sheet: ${visaYes}\\n${esc(sheetLink())}`, 4000),\n  },\n}];\n"
+      },
+      "id": "253148ec-78c0-4814-a618-3633a88d865e",
+      "name": "WF5 · Weekly numbers",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -272,
+        2368
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{ $('CONFIG').first().json.config.WEEKLY_REPORT_EMAIL ? 0 : 1 }}"
+      },
+      "id": "e21a3c07-39c2-47aa-881b-bfd681562ec7",
+      "name": "WF5 · E-mail report?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -48,
+        2368
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: { ...$json, _to: String($('CONFIG').first().json.config.CANDIDATE_EMAIL).trim() } };"
+      },
+      "id": "84098c19-fc0e-4a10-9b51-1f3cae1747a2",
+      "name": "WF5 · Report e-mail text",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        176,
+        2272
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json._to }}",
+        "subject": "={{ $json._subject }}",
+        "emailType": "text",
+        "message": "={{ $json._body }}",
+        "options": {
+          "appendAttribution": false,
+          "senderName": "={{ $('CONFIG').first().json.config.CANDIDATE_NAME }}"
+        }
+      },
+      "id": "88986421-3e00-4b6a-b65a-d197d3e4f61a",
+      "name": "WF5 · E-mail report (Gmail)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        400,
+        2272
+      ],
+      "webhookId": "cf979581-5593-4886-a4b1-6a2b17cefdaa",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "",
+          "name": "Manisha Gmail account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('CONFIG').first().json.config.SHEET_ID }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Log"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "a2745059-bfbb-4cad-b564-947343ec6610",
+      "name": "WF5 · Write log",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        176,
+        2480
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "manisha testing account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{ $('CONFIG').first().json.config.TELEGRAM_CHAT_ID && $json._tg ? 0 : 1 }}"
+      },
+      "id": "309f02d4-f889-4714-af20-b838ee1cb68a",
+      "name": "WF5 · Telegram on?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        400,
+        2480
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('CONFIG').first().json.config.TELEGRAM_CHAT_ID }}",
+        "text": "={{ $json._tg }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "530cdbfd-6361-4606-930d-28cec64f8f21",
+      "name": "WF5 · Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        624,
+        2464
+      ],
+      "webhookId": "3cf50088-e912-486a-9f5b-3c4071147834",
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Telegram account 2"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Error alert (also works when CONFIG itself is broken: then only the n8n execution list shows it).\nlet C = {};\ntry { C = $('CONFIG').first().json.config || {}; } catch (e) {}\nconst e = $json.errorData || {};\nconst exec = e.execution || {};\nconst wf = e.workflow || {};\nconst msg = (exec.error && (exec.error.message || exec.error.description)) || (e.trigger && e.trigger.error && e.trigger.error.message) || 'unknown error';\nconst node = exec.lastNodeExecuted || (e.trigger && e.trigger.error && e.trigger.error.node && e.trigger.error.node.name) || '?';\nconst stamp = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Berlin', dateStyle: 'short', timeStyle: 'short' }).format(new Date());\nconst esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\nreturn [{\n  json: {\n    Timestamp: stamp,\n    Workflow: 'Error',\n    Action: `failed at: ${node}`,\n    Result: String(msg).slice(0, 500),\n    _tg: `🚨 <b>Job automation error</b>\\nNode: ${esc(node)}\\n${esc(String(msg).slice(0, 800))}${exec.url ? `\\n${esc(exec.url)}` : ''}`,\n    _hasTelegram: Boolean(C.TELEGRAM_CHAT_ID),\n  },\n}];\n"
+      },
+      "id": "d970fed2-9566-4c5e-a8ca-89e7017a8746",
+      "name": "ERR · Format alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -496,
+        2800
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('CONFIG').first().json.config.SHEET_ID }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Log"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "1a4cd9f7-35a4-457a-9214-15571d6c5d73",
+      "name": "ERR · Write log",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -272,
+        2800
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "manisha testing account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{ $('ERR · Format alert').first().json._hasTelegram ? 0 : 1 }}"
+      },
+      "id": "f7d052b0-3c86-4c7c-8d54-a0dfb4f681d7",
+      "name": "ERR · Telegram on?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -48,
+        2800
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('CONFIG').first().json.config.TELEGRAM_CHAT_ID }}",
+        "text": "={{ $json._tg }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "b25f9ac4-8f3c-4058-8b98-6404dac0b920",
+      "name": "ERR · Telegram alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        176,
+        2784
+      ],
+      "webhookId": "191dc939-7dbe-4be5-87fb-da6de5e88386",
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Telegram account 2"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "content": "## ⚙️ Start here\n1. Create the 6 credentials with the exact names from the README.\n2. Open **CONFIG** and fill in SHEET_ID, CANDIDATE_EMAIL, CV_DRIVE_FILE_ID (+ TELEGRAM_CHAT_ID).\n3. Settings → Error workflow → this workflow.\n4. Keep **TEST_MODE: true** until the end-to-end test is done.\n\nEvery trigger sets `flow`, CONFIG adds the settings, *Route to flow* sends it to its lane.",
+        "height": 360,
+        "width": 760,
+        "color": 4
+      },
+      "id": "b5a717a7-95fb-47bf-89e0-54eaf53dbef6",
+      "name": "Note 80",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1840,
+        1088
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## WF1 · Job Collector (every 8 h)\nArbeitsagentur API (official) + RSS feeds → only IT roles → not yet in the sheet → job details, company e-mail from the post, VisaFlag, Language → Jobs tab, Status **New** → digest.",
+        "height": 470,
+        "width": 3980,
+        "color": 7
+      },
+      "id": "c58d752d-c3f1-4c0e-ae6c-7ac46b57dc1e",
+      "name": "Note 81",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        -176
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## WF2 · AI Drafter (every 30 min)\nStatus **Selected** → one tailored German + English letter per job (OpenAI) → DraftDE / DraftEN, Status **Draft Ready** → Telegram with the draft. Gurwinder edits, then sets **Approved**.",
+        "height": 470,
+        "width": 2440,
+        "color": 7
+      },
+      "id": "befc2375-0661-4780-b0d4-d95e514173a8",
+      "name": "Note 82",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## WF3 · Sender (every 30 min) — only after approval\nStatus **Approved** → company e-mail from the job post? yes: Gmail + CV → **Applied** · no: **Manual Apply** + Telegram with link + letter. TEST_MODE sends everything to Gurwinder himself.",
+        "height": 470,
+        "width": 3100,
+        "color": 7
+      },
+      "id": "b21a5816-f786-49d5-8389-3e6b079a7c07",
+      "name": "Note 83",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        1024
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## WF4 · Follow-up (daily 08:00)\n**Applied** + 7 days → follow-up 1 · **Follow-up 1** + 7 days → follow-up 2 · **Manual Apply** → reminder to Gurwinder (never to the company).",
+        "height": 470,
+        "width": 2660,
+        "color": 7
+      },
+      "id": "e9eaaf4f-446d-4e05-bc4d-c370c8a8664b",
+      "name": "Note 84",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        1600
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## WF5 · Weekly report (Monday 09:00)\nCounts per status + this week → Log, e-mail, Telegram.",
+        "height": 380,
+        "width": 1560,
+        "color": 7
+      },
+      "id": "8aa8c4f4-59e2-4d29-a4b7-6f0f8cdc534e",
+      "name": "Note 85",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        2192
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Error alerts\nAny failed node → Log tab + Telegram. Needs Settings → Error workflow = this workflow.",
+        "height": 380,
+        "width": 1340,
+        "color": 7
+      },
+      "id": "d62011f3-eee9-415a-8ffa-f3f31ca1325e",
+      "name": "Note 86",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        2624
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "bee9d1c1-20cb-465d-a620-eda29599cfcd",
+      "name": "▶ Run now",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2032,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 8
+            }
+          ]
+        }
+      },
+      "id": "6d856f6f-168e-427b-b218-e25bf475ba6b",
+      "name": "⏰ Auto (every 8h)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -2032,
+        128
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "WF1 · start": {
+      "main": [
+        [
+          {
+            "node": "CONFIG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF2 · start": {
+      "main": [
+        [
+          {
+            "node": "CONFIG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF3 · start": {
+      "main": [
+        [
+          {
+            "node": "CONFIG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF4 · start": {
+      "main": [
+        [
+          {
+            "node": "CONFIG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF5 · start": {
+      "main": [
+        [
+          {
+            "node": "CONFIG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🚨 Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "ERR · start",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ERR · start": {
+      "main": [
+        [
+          {
+            "node": "CONFIG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CONFIG": {
+      "main": [
+        [
+          {
+            "node": "Route to flow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route to flow": {
+      "main": [
+        [
+          {
+            "node": "WF1 · Read existing jobs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WF2 · Read Selected jobs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WF3 · Read Approved jobs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WF4 · Read all jobs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WF5 · Read all jobs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "ERR · Format alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF1 · Read existing jobs": {
+      "main": [
+        [
+          {
+            "node": "WF1 · RSS feed list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF1 · RSS feed list": {
+      "main": [
+        [
+          {
+            "node": "WF1 · RSS feeds?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF1 · RSS feeds?": {
+      "main": [
+        [
+          {
+            "node": "WF1 · Read RSS feed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WF1 · Merge RSS",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "WF1 · Read RSS feed": {
+      "main": [
+        [
+          {
+            "node": "WF1 · Merge RSS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF1 · Merge RSS": {
+      "main": [
+        [
+          {
+            "node": "WF1 · Arbeitsagentur search terms",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF1 · Arbeitsagentur search terms": {
+      "main": [
+        [
+          {
+            "node": "WF1 · Arbeitsagentur job search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF1 · Arbeitsagentur job search": {
+      "main": [
+        [
+          {
+            "node": "WF1 · Normalise, filter, dedupe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF1 · Normalise, filter, dedupe": {
+      "main": [
+        [
+          {
+            "node": "WF1 · Needs job details?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF1 · Needs job details?": {
+      "main": [
+        [
+          {
+            "node": "WF1 · Arbeitsagentur job details",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WF1 · Description, e-mail, visa, language",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WF1 · Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF1 · Arbeitsagentur job details": {
+      "main": [
+        [
+          {
+            "node": "WF1 · Merge details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF1 · Merge details": {
+      "main": [
+        [
+          {
+            "node": "WF1 · Description, e-mail, visa, language",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF1 · Description, e-mail, visa, language": {
+      "main": [
+        [
+          {
+            "node": "WF1 · Add new jobs to sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF1 · Add new jobs to sheet": {
+      "main": [
+        [
+          {
+            "node": "WF1 · Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF1 · Summary": {
+      "main": [
+        [
+          {
+            "node": "WF1 · Write log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF1 · Write log": {
+      "main": [
+        [
+          {
+            "node": "WF1 · Telegram on?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "WF2 · Read Selected jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF1 · Telegram on?": {
+      "main": [
+        [
+          {
+            "node": "WF1 · Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF2 · Read Selected jobs": {
+      "main": [
+        [
+          {
+            "node": "WF2 · Limit per run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF2 · Limit per run": {
+      "main": [
+        [
+          {
+            "node": "WF2 · Read Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF2 · Read Profile": {
+      "main": [
+        [
+          {
+            "node": "WF2 · Build prompts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF2 · Build prompts": {
+      "main": [
+        [
+          {
+            "node": "WF2 · Write letters (OpenAI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF2 · Write letters (OpenAI)": {
+      "main": [
+        [
+          {
+            "node": "WF2 · Read the letters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF2 · Read the letters": {
+      "main": [
+        [
+          {
+            "node": "WF2 · Save drafts in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF2 · Save drafts in sheet": {
+      "main": [
+        [
+          {
+            "node": "WF2 · Write log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF2 · Write log": {
+      "main": [
+        [
+          {
+            "node": "WF2 · Telegram on?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "WF3 · Read Approved jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF2 · Telegram on?": {
+      "main": [
+        [
+          {
+            "node": "WF2 · Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF3 · Read Approved jobs": {
+      "main": [
+        [
+          {
+            "node": "WF3 · Limit per run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF3 · Limit per run": {
+      "main": [
+        [
+          {
+            "node": "WF3 · Prepare applications",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF3 · Prepare applications": {
+      "main": [
+        [
+          {
+            "node": "WF3 · Company e-mail?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF3 · Company e-mail?": {
+      "main": [
+        [
+          {
+            "node": "WF3 · Attach CV",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WF3 · Mark manual apply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF3 · Attach CV": {
+      "main": [
+        [
+          {
+            "node": "WF3 · Send application (Gmail)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF3 · Send application (Gmail)": {
+      "main": [
+        [
+          {
+            "node": "WF3 · Mark applied",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF3 · Mark applied": {
+      "main": [
+        [
+          {
+            "node": "WF3 · Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF3 · Mark manual apply": {
+      "main": [
+        [
+          {
+            "node": "WF3 · Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "WF3 · Merge": {
+      "main": [
+        [
+          {
+            "node": "WF3 · Update sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF3 · Update sheet": {
+      "main": [
+        [
+          {
+            "node": "WF3 · Write log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF3 · Write log": {
+      "main": [
+        [
+          {
+            "node": "WF3 · Telegram on?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "WF4 · Read all jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF3 · Telegram on?": {
+      "main": [
+        [
+          {
+            "node": "WF3 · Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF4 · Read all jobs": {
+      "main": [
+        [
+          {
+            "node": "WF4 · Find due follow-ups",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF4 · Find due follow-ups": {
+      "main": [
+        [
+          {
+            "node": "WF4 · E-mail or reminder?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF4 · E-mail or reminder?": {
+      "main": [
+        [
+          {
+            "node": "WF4 · Send follow-up (Gmail)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WF4 · Reminder e-mail text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF4 · Send follow-up (Gmail)": {
+      "main": [
+        [
+          {
+            "node": "WF4 · Mark follow-up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF4 · Mark follow-up": {
+      "main": [
+        [
+          {
+            "node": "WF4 · Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF4 · Reminder e-mail text": {
+      "main": [
+        [
+          {
+            "node": "WF4 · Remind Gurwinder (Gmail)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF4 · Remind Gurwinder (Gmail)": {
+      "main": [
+        [
+          {
+            "node": "WF4 · Mark reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF4 · Mark reminder": {
+      "main": [
+        [
+          {
+            "node": "WF4 · Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "WF4 · Merge": {
+      "main": [
+        [
+          {
+            "node": "WF4 · Update sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF4 · Update sheet": {
+      "main": [
+        [
+          {
+            "node": "WF4 · Write log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF4 · Write log": {
+      "main": [
+        [
+          {
+            "node": "WF4 · Telegram on?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "WF5 · Read all jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF4 · Telegram on?": {
+      "main": [
+        [
+          {
+            "node": "WF4 · Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF5 · Read all jobs": {
+      "main": [
+        [
+          {
+            "node": "WF5 · Weekly numbers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF5 · Weekly numbers": {
+      "main": [
+        [
+          {
+            "node": "WF5 · E-mail report?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "WF5 · Write log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF5 · E-mail report?": {
+      "main": [
+        [
+          {
+            "node": "WF5 · Report e-mail text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF5 · Report e-mail text": {
+      "main": [
+        [
+          {
+            "node": "WF5 · E-mail report (Gmail)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF5 · Write log": {
+      "main": [
+        [
+          {
+            "node": "WF5 · Telegram on?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF5 · Telegram on?": {
+      "main": [
+        [
+          {
+            "node": "WF5 · Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ERR · Format alert": {
+      "main": [
+        [
+          {
+            "node": "ERR · Write log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ERR · Write log": {
+      "main": [
+        [
+          {
+            "node": "ERR · Telegram on?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ERR · Telegram on?": {
+      "main": [
+        [
+          {
+            "node": "ERR · Telegram alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "▶ Run now": {
+      "main": [
+        [
+          {
+            "node": "WF1 · start",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⏰ Auto (every 8h)": {
+      "main": [
+        [
+          {
+            "node": "WF1 · start",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "affc6244-3283-4f72-8817-b73f66a58c4a",
+  "meta": {
+    "instanceId": "e78b90d190fcd4bb395977077109459d0e34ed10f513752ebe958f88759c5d44"
+  },
+  "id": "VJGVsyZAQZr0Q6CM",
+  "tags": []
+}
